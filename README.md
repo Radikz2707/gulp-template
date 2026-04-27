@@ -61,4 +61,4 @@
 3. **Favicon**: Исходник для фавиконок должен называться `favicon.png` и лежать в `src/images/src/`.
 
 ---
-*Template by [Your Name/Project]*
+*Template by [Radikz2707]*
