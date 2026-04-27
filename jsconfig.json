@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "allowJs": true,
+    "checkJs": false
+  },
+  "exclude": ["node_modules", "dist", "archives", ".eslintrc.json"]
+}
