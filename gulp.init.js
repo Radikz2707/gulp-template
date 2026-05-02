@@ -1,7 +1,10 @@
 import fs from "fs";
+import { config } from "./gulp.config.js";
 
-export function createStructure (config, done) {
-  const { srcFolder, preprocessor } = config;
+export function createStructure(done) {
+  // Используем значения из конфига, если они есть, иначе ставим стандартные
+  const srcFolder = config.srcFolder || "src";
+  const preprocessor = config.preprocessor || "scss";
 
   // 1. КОНТЕНТ ФАЙЛОВ
   const zeroContent = `/* Обнуление (Zero Styles) */
@@ -26,9 +29,23 @@ table { border-collapse: collapse; border-spacing: 0; }
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }`;
 
-  const headerHTML = "<header class=\"header\">\n  <div class=\"container\">\n    <h1>Header Component</h1>\n  </div>\n</header>";
-  const mainHTML = "<main class=\"main\">\n  <div class=\"container\">\n    <h2>Главный контент собран из модулей</h2>\n  </div>\n</main>";
-  const footerHTML = "<footer class=\"footer\">\n  <div class=\"container\">\n    <p>Footer Component</p>\n  </div>\n</footer>";
+  const headerHTML = `<header class="header">
+  <div class="container">
+    <h1>Header Component</h1>
+  </div>
+</header>`;
+
+  const mainHTML = `<main class="main">
+  <div class="container">
+    <h2>Главный контент собран из модулей</h2>
+  </div>
+</main>`;
+
+  const footerHTML = `<footer class="footer">
+  <div class="container">
+    <p>Footer Component</p>
+  </div>
+</footer>`;
 
   const indexHTML = `<!DOCTYPE html>
 <html lang="ru">
@@ -48,11 +65,20 @@ table { border-collapse: collapse; border-spacing: 0; }
 </body>
 </html>`;
 
-  const mainSCSS = "@use \"base/zero\";\n@use \"../components/header/header\";\n@use \"../components/main/main\";\n@use \"../components/footer/footer\";";
+  const styleSCSS = `@use "base/zero";
+@use "../components/header/header";
+@use "../components/main/main";
+@use "../components/footer/footer";`;
 
- const appJsContent =
-   'import { header } from "@/../components/header/header.js";\nimport { main } from "@/../components/main/main.js";\nimport { footer } from "@/../components/footer/footer.js";\n\nheader();\nmain();\nfooter();\n\nconsole.log("Gulp работает, структура (H-M-F) готова!");';
+  const appJsContent = `import { header } from "@/../components/header/header.js";
+import { main } from "@/../components/main/main.js";
+import { footer } from "@/../components/footer/footer.js";
 
+header();
+main();
+footer();
+
+console.log("Gulp работает, структура (H-M-F) готова!");`;
 
   // 2. СПИСОК ПАПОК ДЛЯ СОЗДАНИЯ
   const folders = [
@@ -67,11 +93,13 @@ table { border-collapse: collapse; border-spacing: 0; }
     `${srcFolder}/fonts/dest`,
     `${srcFolder}/components/header`,
     `${srcFolder}/components/main`,
-    `${srcFolder}/components/footer`
+    `${srcFolder}/components/footer`,
   ];
 
   folders.forEach((dir) => {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (dir && !fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
   });
 
   // 3. СПИСОК ФАЙЛОВ ДЛЯ СОЗДАНИЯ
@@ -80,7 +108,7 @@ table { border-collapse: collapse; border-spacing: 0; }
     { path: `${srcFolder}/js/app.js`, content: appJsContent },
     {
       path: `${srcFolder}/${preprocessor}/style.${preprocessor}`,
-      content: mainSCSS,
+      content: styleSCSS,
     },
     {
       path: `${srcFolder}/${preprocessor}/base/_zero.${preprocessor}`,

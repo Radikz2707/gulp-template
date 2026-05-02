@@ -4,6 +4,7 @@ import { createStructure } from "./gulp.init.js";
 import { help } from "./gulp.help.js";
 import { create } from "./gulp.create.js";
 import { remove } from "./gulp.remove.js";
+import { module } from "./gulp.module.js";
 
 // --- 2. Ядро Gulp и системные модули Node.js ---
 import gulp from "gulp";
@@ -480,8 +481,6 @@ function startwatch() {
 
 // --- ЭКСПОРТ КОМАНД ---
 
-export const init = (done) => createStructure(config, done);
-
 export const build = series(
   cleandist,
   parallel(lintCss, lintJs),
@@ -520,4 +519,10 @@ export default series(
   parallel(browsersync, startwatch)
 );
 
-export { help, create, remove };
+export {
+  create,
+  remove,
+  module,
+  createStructure as init, 
+  help,
+};

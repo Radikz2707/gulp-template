@@ -11,13 +11,20 @@ export const help = (done) => {
 ${c.cyan}${c.bold}==========================================
 🚀  GULP TEMPLATE — ШПАРГАЛКА
 ==========================================${c.reset}
-${c.green}${c.bold}npm run dev${c.reset}          — запуск разработки и сервера
-${c.green}${c.bold}npm run build${c.reset}        — финальная сборка проекта
-${c.green}${c.bold}npm run lint${c.reset}         — проверка JS и SCSS на ошибки
+${c.green}${c.bold}npm run dev${c.reset}          — запуск сервера и разработки
+${c.green}${c.bold}npm run build${c.reset}        — финальная сборка (сжатие, ZIP)
+${c.green}${c.bold}npm run lint${c.reset}         — проверка кода (JS/SCSS/HTML)
 ${c.green}${c.bold}npm run clean${c.reset}        — полная очистка папки dist
 
-${c.yellow}${c.bold}gulp create --имя_блока${c.reset} — создать новый блок (пример: gulp create --header)
-${c.yellow}${c.bold}gulp remove --имя_блока${c.reset} — удалить блок (пример: gulp remove --header)
+${c.cyan}${c.bold}КОНСТРУКТОР КОМПОНЕНТОВ:${c.reset}
+${c.yellow}${c.bold}gulp create --имя${c.reset}    — создать БЛОК (HTML + SCSS + JS)
+                          ${c.cyan}* для секций сайта (header, hero, services)${c.reset}
+
+${c.yellow}${c.bold}gulp module --имя${c.reset}    — создать МОДУЛЬ (JS + SCSS)
+                          ${c.cyan}* для логики и уроков (slider, forms, math)${c.reset}
+
+${c.yellow}${c.bold}gulp remove --имя${c.reset}    — УДАЛИТЬ компонент или модуль
+                          ${c.cyan}* полностью вырезает все импорты и файлы${c.reset}
 
 ${c.cyan}------------------------------------------
 Пути и настройки меняются в: ${c.bold}gulp.config.js${c.reset}
