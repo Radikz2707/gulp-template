@@ -134,20 +134,28 @@ export const lintJs = (done) => {
 };
 
 export function scripts() {
-  return src(paths.scripts.src) // Берем точку входа из твоего конфига (src/js/app.js)
+  return src(paths.scripts.src)
     .pipe(plumber({ errorHandler: onError }))
     .pipe(
       webpackStream(
         {
-          mode: "production", // Или "development" для быстрой сборки
+          mode: "production",
           performance: { hints: false },
-          // Явно указываем точку входа вместо плагина named
           entry: {
             app: `./${srcFolder}/js/app.js`,
           },
           output: {
-            filename: "app.min.js", // Имя файла на выходе в dist/js/
+            filename: "app.min.js",
           },
+          // --- ДОБАВЬТЕ ЭТОТ БЛОК ---
+          resolve: {
+            alias: {
+              // Указываем Webpack, что @ означает папку src/js
+              "@": Buffer.from(process.cwd() + `/${srcFolder}/js`).toString(),
+            },
+            extensions: [".js", ".json"],
+          },
+          // --------------------------
           module: {
             rules: [
               {
@@ -164,7 +172,6 @@ export function scripts() {
             minimize: true,
             minimizer: [new TerserPlugin({ extractComments: false })],
           },
-          // Добавляем для удобной отладки в браузере
           devtool: "source-map",
         },
         webpack,
