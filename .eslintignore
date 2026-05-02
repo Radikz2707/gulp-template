@@ -1,4 +1,21 @@
-node_modules
-dist
-archives
-gulpfile.js
+# Зависимости
+node_modules/
+
+# Сборка и архивы
+dist/
+archives/
+*.log
+
+# Конфиденциальные данные
+.env
+.env.local
+
+# Системные файлы
+Thumbs.db
+.DS_Store
+
+# Временные файлы редакторов
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.sublime-project

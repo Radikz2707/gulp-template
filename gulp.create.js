@@ -8,7 +8,7 @@ export const create = (done) => {
 
   if (!blockName) {
     console.log(
-      "\n❌ Ошибка: Укажите имя блока! Пример: gulp create --header\n"
+      "\n❌ Ошибка: Укажите имя блока! Пример: gulp create --header\n",
     );
     return done();
   }
@@ -30,25 +30,26 @@ export const create = (done) => {
   // 2. Создаем файлы (HTML с контейнером, SCSS, JS)
   fs.writeFileSync(
     `${dirPath}/${blockName}.html`,
-    `<section class="${blockName}">\n\t<div class="${blockName}__container container">\n\t\t\n\t</div>\n</section>`
+    `<section class="${blockName}">\n\t<div class="${blockName}__container container">\n\t\t\n\t</div>\n</section>`,
   );
 
   fs.writeFileSync(
     `${dirPath}/${blockName}.${config.preprocessor}`,
-    `.${blockName} {\n\t\n}`
+    `.${blockName} {\n\t\n}`,
   );
 
   fs.writeFileSync(
     `${dirPath}/${blockName}.js`,
-    `export const ${blockName} = () => {\n\tconsole.log("Блок ${blockName} инициализирован");\n};\n`
+    `export const ${blockName} = () => {\n\tconsole.log("Блок ${blockName} инициализирован");\n};\n`,
   );
 
-  // 3. Авто-подключение JS
+  // 3. Авто-подключение JS (с использованием алиаса @)
   if (fs.existsSync(mainJsPath)) {
-    const jsImport = `import { ${blockName} } from "../components/${blockName}/${blockName}.js";\n`;
+    // Теперь путь всегда короткий и понятный, вне зависимости от вложенности app.js
+    const jsImport = `import { ${blockName} } from "@/../components/${blockName}/${blockName}.js";\n`;
     const jsCall = `${blockName}();\n`;
     fs.appendFileSync(mainJsPath, `\n${jsImport}${jsCall}`);
-    console.log("🔗 Блок подключен к app.js");
+    console.log("🔗 Блок подключен к app.js через алиас @");
   }
 
   // 4. Авто-подключение SCSS (@use)
@@ -77,4 +78,4 @@ export const create = (done) => {
 
   console.log(`\n✅ Блок "${blockName}" успешно создан в ${dirPath}\n`);
   done();
-};
+};;

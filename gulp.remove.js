@@ -8,7 +8,7 @@ export const remove = (done) => {
 
   if (!blockName) {
     console.log(
-      "\n❌ Ошибка: Укажите имя блока! Пример: gulp remove --header\n"
+      "\n❌ Ошибка: Укажите имя блока! Пример: gulp remove --header\n",
     );
     return done();
   }
@@ -27,9 +27,11 @@ export const remove = (done) => {
   // 2. Чистка JS (вырезаем импорт и вызов)
   if (fs.existsSync(mainJsPath)) {
     let jsContent = fs.readFileSync(mainJsPath, "utf8");
+
+    // Регулярка теперь ищет и "../components/" и "@/../components/"
     const jsImportReg = new RegExp(
-      `import { ${blockName} } from "../components/${blockName}/${blockName}.js";\\n?`,
-      "g"
+      `import { ${blockName} } from "(@/\\.\\.|\\.\\.)/components/${blockName}/${blockName}\\.js";\\n?`,
+      "g",
     );
     const jsCallReg = new RegExp(`${blockName}\\(\\);\\n?`, "g");
 
@@ -43,7 +45,7 @@ export const remove = (done) => {
     let scssContent = fs.readFileSync(mainScssPath, "utf8");
     const scssImportReg = new RegExp(
       `@use "../components/${blockName}/${blockName}";\\n?`,
-      "g"
+      "g",
     );
 
     scssContent = scssContent.replace(scssImportReg, "");
@@ -57,7 +59,7 @@ export const remove = (done) => {
     // Регулярка ищет инклуд и может захватить лишний перенос строки для чистоты
     const htmlIncludeReg = new RegExp(
       `@@include\\("components/${blockName}/${blockName}.html"\\)\\n?`,
-      "g"
+      "g",
     );
 
     htmlContent = htmlContent.replace(htmlIncludeReg, "");
@@ -71,4 +73,4 @@ export const remove = (done) => {
 
   console.log(`\n✅ Блок "${blockName}" полностью удален.\n`);
   done();
-};
+};;

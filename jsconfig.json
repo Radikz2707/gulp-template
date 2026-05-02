@@ -2,8 +2,15 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
+    "moduleResolution": "bundler",
+    /* ОТКЛЮЧАЕМ СТРОГУЮ ПРОВЕРКУ ТИПОВ ДЛЯ JS */
+    "checkJs": false,
     "allowJs": true,
-    "checkJs": false
+    /* УБИРАЕМ ОШИБКУ BASEURL */
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["./src/js/*"]
+    }
   },
-  "exclude": ["node_modules", "dist", "archives", ".eslintrc.json"]
+  "exclude": ["node_modules", "dist", "archives"]
 }

@@ -50,7 +50,9 @@ table { border-collapse: collapse; border-spacing: 0; }
 
   const mainSCSS = "@use \"base/zero\";\n@use \"../components/header/header\";\n@use \"../components/main/main\";\n@use \"../components/footer/footer\";";
 
-  const appJsContent = "import { header } from \"../components/header/header.js\";\nimport { main } from \"../components/main/main.js\";\nimport { footer } from \"../components/footer/footer.js\";\n\nheader();\nmain();\nfooter();\n\nconsole.log(\"Gulp работает, скрипты собраны!\");";
+ const appJsContent =
+   'import { header } from "@/../components/header/header.js";\nimport { main } from "@/../components/main/main.js";\nimport { footer } from "@/../components/footer/footer.js";\n\nheader();\nmain();\nfooter();\n\nconsole.log("Gulp работает, алиасы настроены, скрипты собраны!");';
+
 
   // 2. СПИСОК ПАПОК ДЛЯ СОЗДАНИЯ
   const folders = [

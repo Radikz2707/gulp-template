@@ -175,39 +175,39 @@ export function scripts() {
 }
 
 export function styles() {
-  return (
-    src(paths.styles.src)
-      .pipe(plumber({ errorHandler: onError }))
-      .pipe(sourcemaps.init())
-      .pipe(
-        sass({
-          silenceDeprecations: ["import"], // Игнорируем предупреждения от сторонних библиотек
-        }).on("error", sass.logError),
-      )
-      .pipe(gcmq())
-      .pipe(
-        postcss([
-          webpInCss,
-          cssDeclarationSorter({ order: "smacss" }),
-          autoprefixer({ grid: "autoplace" }),
-        ]),
-      )
-      .pipe(
-        cleancss({
-          level: { 2: { mergeMedia: true } },
+  return src(paths.styles.src)
+    .pipe(plumber({ errorHandler: onError }))
+    .pipe(sourcemaps.init())
+    .pipe(
+      sass({
+        silenceDeprecations: ["import"],
+      }).on("error", sass.logError),
+    )
+    .pipe(gcmq())
+    .pipe(
+      postcss([
+        webpInCss,
+        // cssDeclarationSorter УДАЛЕН, так как за порядок теперь отвечает Stylelint
+        autoprefixer({
+          overrideBrowserslist: config.settings.autoprefixer,
+          grid: "autoplace",
         }),
-      )
-      .pipe(rename({ basename: "app", suffix: ".min" }))
-      // ОБНОВЛЕННАЯ СТРОКА:
-      .pipe(
-        sourcemaps.write(".", {
-          includeContent: false, // Не вшиваем код в карту, читаем из файлов
-          sourceRoot: "../../src/scss", // Путь от dist/css/ до исходников scss
-        }),
-      )
-      .pipe(dest(paths.styles.dest))
-      .pipe(bs.stream())
-  );
+      ]),
+    )
+    .pipe(
+      cleancss({
+        level: { 2: { mergeMedia: true } },
+      }),
+    )
+    .pipe(rename({ basename: "app", suffix: ".min" }))
+    .pipe(
+      sourcemaps.write(".", {
+        includeContent: false,
+        sourceRoot: "../../src/scss",
+      }),
+    )
+    .pipe(dest(paths.styles.dest))
+    .pipe(bs.stream());
 }
 
 export function html() {

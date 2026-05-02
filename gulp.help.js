@@ -15,8 +15,8 @@ ${c.green}${c.bold}npm run dev${c.reset}          — запуск разраб�
 ${c.green}${c.bold}npm run build${c.reset}        — финальная сборка проекта
 ${c.green}${c.bold}npm run lint${c.reset}         — проверка JS и SCSS на ошибки
 
-${c.yellow}${c.bold}gulp create --name${c.reset}   — создать новый блок (HTML/SCSS/JS)
-${c.yellow}${c.bold}gulp remove --name${c.reset}   — полностью удалить блок из проекта
+${c.yellow}${c.bold}gulp create --имя_блока${c.reset} — создать новый блок (пример: gulp create --header)
+${c.yellow}${c.bold}gulp remove --имя_блока${c.reset} — удалить блок (пример: gulp remove --header)
 
 ${c.cyan}------------------------------------------
 Пути и настройки меняются в: ${c.bold}gulp.config.js${c.reset}
