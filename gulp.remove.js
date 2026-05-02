@@ -15,20 +15,23 @@ export const remove = (done) => {
 
   const dirPath = `${config.srcFolder}/components/${blockName}`;
   const mainJsPath = `${config.srcFolder}/js/app.js`;
-  const mainScssPath = `${config.srcFolder}/${config.preprocessor}/main.${config.preprocessor}`;
+  // ИСПРАВЛЕНО: Теперь ищем style.scss
+  const mainScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
   const indexHtmlPath = `${config.srcFolder}/index.html`;
 
   // 1. Удаление папки компонента
   if (fs.existsSync(dirPath)) {
     fs.rmSync(dirPath, { recursive: true, force: true });
-    console.log(`\n🗑️ Папка компонента ${blockName} удалена.`);
+    console.log(`\n🗑️ Папка компонента "${blockName}" удалена.`);
+  } else {
+    console.log(`\n⚠️ Папка компонента "${blockName}" не найдена.`);
   }
 
   // 2. Чистка JS (вырезаем импорт и вызов)
   if (fs.existsSync(mainJsPath)) {
     let jsContent = fs.readFileSync(mainJsPath, "utf8");
 
-    // Регулярка теперь ищет и "../components/" и "@/../components/"
+    // Ищет импорты с любым префиксом (@/.. или ..)
     const jsImportReg = new RegExp(
       `import { ${blockName} } from "(@/\\.\\.|\\.\\.)/components/${blockName}/${blockName}\\.js";\\n?`,
       "g",
@@ -37,7 +40,7 @@ export const remove = (done) => {
 
     jsContent = jsContent.replace(jsImportReg, "").replace(jsCallReg, "");
     fs.writeFileSync(mainJsPath, jsContent);
-    console.log("✂️ Импорты удалены из app.js");
+    console.log("✂️ Импорты JS удалены.");
   }
 
   // 3. Чистка SCSS (вырезаем @use)
@@ -50,13 +53,13 @@ export const remove = (done) => {
 
     scssContent = scssContent.replace(scssImportReg, "");
     fs.writeFileSync(mainScssPath, scssContent);
-    console.log(`✂️ Стили удалены из main.${config.preprocessor}`);
+    // ИСПРАВЛЕНО: Текст лога для style.scss
+    console.log(`✂️ Стили удалены из style.${config.preprocessor}`);
   }
 
   // 4. Чистка HTML (вырезаем @@include)
   if (fs.existsSync(indexHtmlPath)) {
     let htmlContent = fs.readFileSync(indexHtmlPath, "utf8");
-    // Регулярка ищет инклуд и может захватить лишний перенос строки для чистоты
     const htmlIncludeReg = new RegExp(
       `@@include\\("components/${blockName}/${blockName}.html"\\)\\n?`,
       "g",
@@ -64,13 +67,13 @@ export const remove = (done) => {
 
     htmlContent = htmlContent.replace(htmlIncludeReg, "");
 
-    // Убираем возможные тройные переносы строк, если они образовались
+    // Убираем лишние пустые строки, которые могли остаться
     htmlContent = htmlContent.replace(/\n\s*\n\n/g, "\n\n");
 
     fs.writeFileSync(indexHtmlPath, htmlContent);
-    console.log("✂️ Инклуд удален из index.html");
+    console.log("✂️ Инклуд удален из HTML.");
   }
 
-  console.log(`\n✅ Блок "${blockName}" полностью удален.\n`);
+  console.log(`\n✅ Блок "${blockName}" полностью вырезан из проекта.\n`);
   done();
-};;
+};

@@ -12,7 +12,7 @@ export const config = {
 
   paths: {
     styles: {
-      src: `${srcFolder}/${preprocessor}/main.{sass,scss,less}`,
+      src: `${srcFolder}/${preprocessor}/style.{sass,scss,less}`,
       dest: `${buildFolder}/css/`,
       output: "app.min.css",
     },

@@ -1,0 +1,8 @@
+@use "base/zero";
+@use "../components/header/header";
+@use "../components/main/main";
+@use "../components/footer/footer";
+
+// Подключаем стили терминала для уроков
+// Замените строку 7 на эту:
+@use "../js/modules/lessons/01_basics" as basics;

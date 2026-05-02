@@ -51,7 +51,7 @@ table { border-collapse: collapse; border-spacing: 0; }
   const mainSCSS = "@use \"base/zero\";\n@use \"../components/header/header\";\n@use \"../components/main/main\";\n@use \"../components/footer/footer\";";
 
  const appJsContent =
-   'import { header } from "@/../components/header/header.js";\nimport { main } from "@/../components/main/main.js";\nimport { footer } from "@/../components/footer/footer.js";\n\nheader();\nmain();\nfooter();\n\nconsole.log("Gulp работает, алиасы настроены, скрипты собраны!");';
+   'import { header } from "@/../components/header/header.js";\nimport { main } from "@/../components/main/main.js";\nimport { footer } from "@/../components/footer/footer.js";\n\nheader();\nmain();\nfooter();\n\nconsole.log("Gulp работает, структура (H-M-F) готова!");';
 
 
   // 2. СПИСОК ПАПОК ДЛЯ СОЗДАНИЯ
@@ -79,49 +79,49 @@ table { border-collapse: collapse; border-spacing: 0; }
     { path: `${srcFolder}/index.html`, content: indexHTML },
     { path: `${srcFolder}/js/app.js`, content: appJsContent },
     {
-      path: `${srcFolder}/${preprocessor}/main.${preprocessor}`,
-      content: mainSCSS
+      path: `${srcFolder}/${preprocessor}/style.${preprocessor}`,
+      content: mainSCSS,
     },
     {
       path: `${srcFolder}/${preprocessor}/base/_zero.${preprocessor}`,
-      content: zeroContent
+      content: zeroContent,
     },
 
     // Header
     { path: `${srcFolder}/components/header/header.html`, content: headerHTML },
     {
       path: `${srcFolder}/components/header/header.${preprocessor}`,
-      content: ".header { padding: 20px; background: #f4f4f4; }"
+      content: ".header { padding: 20px; background: #f4f4f4; }",
     },
     {
       path: `${srcFolder}/components/header/header.js`,
       content:
-        "export const header = () => {\n  console.log('Header JS Loaded');\n};"
+        "export const header = () => {\n  console.log('Header JS Loaded');\n};",
     },
 
     // Main
     { path: `${srcFolder}/components/main/main.html`, content: mainHTML },
     {
       path: `${srcFolder}/components/main/main.${preprocessor}`,
-      content: ".main { flex: 1 1 auto; padding: 40px 0; }"
+      content: ".main { flex: 1 1 auto; padding: 40px 0; }",
     },
     {
       path: `${srcFolder}/components/main/main.js`,
       content:
-        "export const main = () => {\n  console.log('Main JS Loaded');\n};"
+        "export const main = () => {\n  console.log('Main JS Loaded');\n};",
     },
 
     // Footer
     { path: `${srcFolder}/components/footer/footer.html`, content: footerHTML },
     {
       path: `${srcFolder}/components/footer/footer.${preprocessor}`,
-      content: ".footer { padding: 20px; background: #333; color: #fff; }"
+      content: ".footer { padding: 20px; background: #333; color: #fff; }",
     },
     {
       path: `${srcFolder}/components/footer/footer.js`,
       content:
-        "export const footer = () => {\n  console.log('Footer JS Loaded');\n};"
-    }
+        "export const footer = () => {\n  console.log('Footer JS Loaded');\n};",
+    },
   ];
 
   files.forEach((file) => {

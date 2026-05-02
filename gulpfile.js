@@ -197,7 +197,7 @@ export function styles() {
         // cssDeclarationSorter УДАЛЕН, так как за порядок теперь отвечает Stylelint
         autoprefixer({
           overrideBrowserslist: config.settings.autoprefixer,
-          grid: "autoplace",
+          grid: false,
         }),
       ]),
     )
