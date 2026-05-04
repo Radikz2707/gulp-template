@@ -337,18 +337,37 @@ export function sprite() {
     .pipe(
       cheerio({
         run: function ($) {
-          $("[fill]").removeAttr("fill");
+          // Очистка атрибутов для управления цветом через CSS
+          $("[fill]").each(function () {
+            // Удаляем fill только если это не 'none'
+            if ($(this).attr("fill") !== "none") {
+              $(this).removeAttr("fill");
+            }
+          });
           $("[stroke]").removeAttr("stroke");
           $("[style]").removeAttr("style");
+          $("[class]").removeAttr("class");
+          // Удаляем id у внутренних элементов, чтобы не дублировались в DOM
+          $("path, circle, rect, ellipse").removeAttr("id");
         },
         parserOptions: { xmlMode: true },
       }),
     )
-    .pipe(replace("&gt;", ">")) // Вызов replace, чтобы импорт не был лишним
+    .pipe(replace("&gt;", ">"))
     .pipe(
       svgSprite({
-        mode: { symbol: { dest: ".", sprite: "sprite.svg" } },
-        shape: { id: { generator: (name) => name.split(".").shift() } },
+        mode: {
+          symbol: {
+            dest: ".",
+            sprite: "sprite.svg",
+          },
+        },
+        shape: {
+          id: {
+            // Имя иконки будет равно имени файла без расширения
+            generator: (name) => name.split(".").shift(),
+          },
+        },
       }),
     )
     .pipe(dest(paths.images.dest))
@@ -448,9 +467,18 @@ export function buildcopy() {
 }
 
 export function zipFiles() {
+  // Формируем дату и время: ГГГГ-ММ-ДД_ЧЧ-ММ
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10);
+  const time = `${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}`;
+  const fileName = `dist_${date}_${time}.zip`;
+
   return src(`${buildFolder}/**/*`)
-    .pipe(zip("dist_build.zip"))
-    .pipe(dest("archives/"));
+    .pipe(zip(fileName))
+    .pipe(dest("archives/"))
+    .on("end", () => {
+      console.log(`\n📦 Архив готов: archives/${fileName}\n`);
+    });
 }
 
 function startwatch() {
