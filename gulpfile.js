@@ -406,14 +406,24 @@ export function favs() {
   );
 }
 
-export function fonts() {
-  return src(paths.fonts.src, { encoding: false })
+export function fonts(done) {
+  // 1. Добавили done
+  return src(paths.fonts.src, { encoding: false, allowEmpty: true }) // 2. Добавили allowEmpty
     .pipe(fonter({ formats: ["woff"] }))
     .pipe(dest(paths.fonts.dest))
-    .pipe(src(`${srcFolder}/fonts/src/**/*.ttf`, { encoding: false }))
+    .pipe(
+      src(`${srcFolder}/fonts/src/**/*.ttf`, {
+        encoding: false,
+        allowEmpty: true,
+      }),
+    )
     .pipe(ttf2woff2())
     .pipe(dest(paths.fonts.dest))
-    .on("end", bs.reload);
+    .on("end", () => {
+      bs.reload();
+      done(); // 3. Сигнализируем о завершении
+    })
+    .on("error", done); // 4. В случае ошибки тоже завершаем
 }
 
 export function fontsStyle(done) {
