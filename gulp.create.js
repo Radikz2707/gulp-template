@@ -62,7 +62,21 @@ export const create = (done) => {
   if (fs.existsSync(indexHtmlPath)) {
     let htmlContent = fs.readFileSync(indexHtmlPath, "utf8");
     const includeString = `@@include("components/${blockName}/${blockName}.html")\n`;
-    htmlContent = htmlContent.replace("</body>", `${includeString}</body>`);
+
+    // 1. Ищем тег скрипта, чтобы вставиться ПЕРЕД ним
+    const scriptTag = '<script src="js/app.min.js"></script>';
+
+    if (htmlContent.includes(scriptTag)) {
+      // 2. Если скрипт найден, вставляем инклюд ПЕРЕД ним
+      htmlContent = htmlContent.replace(
+        scriptTag,
+        `${includeString}${scriptTag}`,
+      );
+    } else {
+      // 3. Если скрипта нет, вставляем перед закрывающим body
+      htmlContent = htmlContent.replace("</body>", `${includeString}</body>`);
+    }
+
     fs.writeFileSync(indexHtmlPath, htmlContent);
   }
 
