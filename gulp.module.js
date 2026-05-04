@@ -1,17 +1,21 @@
 import fs from "fs";
 import { config } from "./gulp.config.js";
 
+const toCamelCase = (str) => {
+  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+};
+
 export const module = (done) => {
   const name = process.argv
     .find((arg) => arg.startsWith("--"))
     ?.replace("--", "");
 
   if (!name) {
-    console.log("\n❌ Укажите имя модуля! Пример: gulp module --slider\n");
+    console.log("\n❌ Укажите имя модуля!\n");
     return done();
   }
 
-  // Используем путь из config.structure
+  const camelName = toCamelCase(name);
   const dirPath = `${config.structure.modules}/${name}`;
   const appJsPath = `${config.srcFolder}/js/app.js`;
   const styleScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
@@ -21,31 +25,27 @@ export const module = (done) => {
     return done();
   }
 
-  // 1. Создаем папку модуля
   fs.mkdirSync(dirPath, { recursive: true });
-
-  // 2. Создаем JS файл
-  const jsContent = `export const ${name} = () => {\n  console.log("Модуль ${name} инициализирован");\n};\n`;
-  fs.writeFileSync(`${dirPath}/${name}.js`, jsContent);
-
-  // 3. Создаем SCSS файл
+  fs.writeFileSync(
+    `${dirPath}/${name}.js`,
+    `export const ${camelName} = () => {\n  console.log("Модуль ${name} инициализирован");\n};\n`,
+  );
   fs.writeFileSync(`${dirPath}/${name}.scss`, `.${name} {\n  \n}\n`);
 
-  // 4. Подключаем в app.js (используем алиас @ корректно)
   if (fs.existsSync(appJsPath)) {
-    const importStr = `import { ${name} } from "@/modules/${name}/${name}.js";\n`;
-    const callStr = `${name}();\n`;
-    fs.appendFileSync(appJsPath, `\n${importStr}${callStr}`);
-    console.log(`🔗 Модуль "${name}" подключен к app.js`);
+    fs.appendFileSync(
+      appJsPath,
+      `\nimport { ${camelName} } from "@/modules/${name}/${name}.js";\n${camelName}();\n`,
+    );
   }
 
-  // 5. Подключаем в style.scss (путь относительно папки scss)
   if (fs.existsSync(styleScssPath)) {
-    const scssImport = `@use "../js/modules/${name}/${name}" as ${name};\n`;
-    fs.appendFileSync(styleScssPath, `\n${scssImport}`);
-    console.log(`🎨 Стили модуля подключены к style.${config.preprocessor}`);
+    fs.appendFileSync(
+      styleScssPath,
+      `\n@use "../js/modules/${name}/${name}" as ${name};\n`,
+    );
   }
 
-  console.log(`\n✅ Модуль "${name}" успешно создан в ${dirPath}\n`);
+  console.log(`\n✅ Модуль "${name}" (JS: ${camelName}) создан!\n`);
   done();
 };
