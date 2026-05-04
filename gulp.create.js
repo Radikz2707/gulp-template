@@ -13,9 +13,9 @@ export const create = (done) => {
     return done();
   }
 
-  const dirPath = `${config.srcFolder}/components/${blockName}`;
+  // Используем пути из config.structure
+  const dirPath = `${config.structure.components}/${blockName}`;
   const mainJsPath = `${config.srcFolder}/js/app.js`;
-  // ИСПРАВЛЕНО: Теперь ищем style.scss, а не main.scss
   const mainScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
   const indexHtmlPath = `${config.srcFolder}/index.html`;
 
@@ -24,11 +24,11 @@ export const create = (done) => {
     return done();
   }
 
-  // 1. Создаем структуру папок компонента
+  // 1. Создаем структуру папок
   fs.mkdirSync(dirPath, { recursive: true });
   fs.mkdirSync(`${dirPath}/img`, { recursive: true });
 
-  // 2. Генерируем файлы (HTML, SCSS, JS)
+  // 2. Генерируем файлы
   fs.writeFileSync(
     `${dirPath}/${blockName}.html`,
     `<section class="${blockName}">\n\t<div class="${blockName}__container container">\n\t\t\n\t</div>\n</section>`,
@@ -44,32 +44,31 @@ export const create = (done) => {
     `export const ${blockName} = () => {\n\tconsole.log("Блок ${blockName} инициализирован");\n};\n`,
   );
 
-  // 3. Авто-подключение JS (через алиас @)
+  // 3. Авто-подключение JS (используем алиас @ корректно)
   if (fs.existsSync(mainJsPath)) {
+    // Поскольку alias @ указывает на src/js, а компоненты в src/components, выходим на уровень выше через ..
     const jsImport = `import { ${blockName} } from "@/../components/${blockName}/${blockName}.js";\n`;
     const jsCall = `${blockName}();\n`;
     fs.appendFileSync(mainJsPath, `\n${jsImport}${jsCall}`);
     console.log("🔗 Блок подключен к app.js через алиас @");
   }
 
-  // 4. Авто-подключение SCSS (к новому файлу style.scss)
+  // 4. Авто-подключение SCSS
   if (fs.existsSync(mainScssPath)) {
     const scssImport = `@use "../components/${blockName}/${blockName}";\n`;
     fs.appendFileSync(mainScssPath, `\n${scssImport}`);
     console.log(`🎨 Стили подключены к style.${config.preprocessor}`);
   }
 
-  // 5. Подключение HTML в index.html (перед скриптами)
+  // 5. Подключение HTML в index.html (умная вставка)
   if (fs.existsSync(indexHtmlPath)) {
     let htmlContent = fs.readFileSync(indexHtmlPath, "utf8");
     const includeString = `@@include("components/${blockName}/${blockName}.html")\n`;
 
     if (htmlContent.includes("<script")) {
       htmlContent = htmlContent.replace("<script", `${includeString}\n<script`);
-    } else if (htmlContent.includes("</body>")) {
-      htmlContent = htmlContent.replace("</body>", `${includeString}</body>`);
     } else {
-      htmlContent = htmlContent.trimEnd() + `\n${includeString}`;
+      htmlContent = htmlContent.replace("</body>", `${includeString}</body>`);
     }
     fs.writeFileSync(indexHtmlPath, htmlContent);
     console.log("📄 Блок подключен в index.html");

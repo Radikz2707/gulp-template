@@ -21,7 +21,7 @@ ${c.yellow}${c.bold}gulp create --имя${c.reset}    — создать БЛО�
                           ${c.cyan}* для секций сайта (header, hero, services)${c.reset}
 
 ${c.yellow}${c.bold}gulp module --имя${c.reset}    — создать МОДУЛЬ (JS + SCSS)
-                          ${c.cyan}* для логики и уроков (slider, forms, math)${c.reset}
+                          ${c.cyan}* для логики и скриптов (slider, forms, tabs)${c.reset}
 
 ${c.yellow}${c.bold}gulp remove --имя${c.reset}    — УДАЛИТЬ компонент или модуль
                           ${c.cyan}* полностью вырезает все импорты и файлы${c.reset}

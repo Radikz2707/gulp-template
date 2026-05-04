@@ -11,7 +11,8 @@ export const module = (done) => {
     return done();
   }
 
-  const dirPath = `${config.srcFolder}/js/modules/${name}`;
+  // Используем путь из config.structure
+  const dirPath = `${config.structure.modules}/${name}`;
   const appJsPath = `${config.srcFolder}/js/app.js`;
   const styleScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
 
@@ -30,7 +31,7 @@ export const module = (done) => {
   // 3. Создаем SCSS файл
   fs.writeFileSync(`${dirPath}/${name}.scss`, `.${name} {\n  \n}\n`);
 
-  // 4. Подключаем в app.js
+  // 4. Подключаем в app.js (используем алиас @ корректно)
   if (fs.existsSync(appJsPath)) {
     const importStr = `import { ${name} } from "@/modules/${name}/${name}.js";\n`;
     const callStr = `${name}();\n`;
@@ -38,11 +39,11 @@ export const module = (done) => {
     console.log(`🔗 Модуль "${name}" подключен к app.js`);
   }
 
-  // 5. Подключаем в style.scss
+  // 5. Подключаем в style.scss (путь относительно папки scss)
   if (fs.existsSync(styleScssPath)) {
     const scssImport = `@use "../js/modules/${name}/${name}" as ${name};\n`;
     fs.appendFileSync(styleScssPath, `\n${scssImport}`);
-    console.log(`🎨 Стили модуля подключены к style.scss`);
+    console.log(`🎨 Стили модуля подключены к style.${config.preprocessor}`);
   }
 
   console.log(`\n✅ Модуль "${name}" успешно создан в ${dirPath}\n`);

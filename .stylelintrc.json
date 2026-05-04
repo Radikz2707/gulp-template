@@ -165,6 +165,8 @@
     "no-descending-specificity": null,
     "selector-class-pattern": null,
     "scss/at-import-partial-extension": null,
-    "scss/at-rule-no-unknown": true
+    "scss/at-rule-no-unknown": true,
+    "at-rule-no-unknown": null,
+    "scss/at-use-no-unnamespaced": null
   }
 }

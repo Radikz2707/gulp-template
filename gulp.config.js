@@ -7,6 +7,14 @@ export const config = {
   srcFolder,
   buildFolder,
 
+  // Пути для конструктора (создание/удаление)
+  structure: {
+    components: `${srcFolder}/components`,
+    modules: `${srcFolder}/js/modules`,
+    lessons: `${srcFolder}/js/modules/lessons`,
+    plugins: `${srcFolder}/js/plugins`,
+  },
+
   // Корень для JS алиасов (используется в webpack и jsconfig)
   aliasPath: `${srcFolder}/js`,
 

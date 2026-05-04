@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "gulp",
     "build": "gulp build",
+    "init": "gulp createStructure",
     "create": "gulp create",
+    "module": "gulp module",
     "remove": "gulp remove",
     "lint": "cross-env ESLINT_USE_FLAT_CONFIG=false gulp lintJs && gulp lintCss",
     "clean": "gulp cleandist"

@@ -2,9 +2,10 @@ import fs from "fs";
 import { config } from "./gulp.config.js";
 
 export function createStructure(done) {
-  // Используем значения из конфига, если они есть, иначе ставим стандартные
+  // Используем значения из конфига
   const srcFolder = config.srcFolder || "src";
   const preprocessor = config.preprocessor || "scss";
+  const struct = config.structure;
 
   // 1. КОНТЕНТ ФАЙЛОВ
   const zeroContent = `/* Обнуление (Zero Styles) */
@@ -28,24 +29,6 @@ table { border-collapse: collapse; border-spacing: 0; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }`;
-
-  const headerHTML = `<header class="header">
-  <div class="container">
-    <h1>Header Component</h1>
-  </div>
-</header>`;
-
-  const mainHTML = `<main class="main">
-  <div class="container">
-    <h2>Главный контент собран из модулей</h2>
-  </div>
-</main>`;
-
-  const footerHTML = `<footer class="footer">
-  <div class="container">
-    <p>Footer Component</p>
-  </div>
-</footer>`;
 
   const indexHTML = `<!DOCTYPE html>
 <html lang="ru">
@@ -80,20 +63,18 @@ footer();
 
 console.log("Gulp работает, структура (H-M-F) готова!");`;
 
-  // 2. СПИСОК ПАПОК ДЛЯ СОЗДАНИЯ
+  // 2. СПИСОК ПАПОК ДЛЯ СОЗДАНИЯ (на основе конфига)
   const folders = [
     srcFolder,
-    `${srcFolder}/${preprocessor}`,
     `${srcFolder}/${preprocessor}/base`,
-    `${srcFolder}/js`,
-    `${srcFolder}/js/modules`,
+    struct.components,
+    struct.modules,
+    struct.plugins,
     `${srcFolder}/images/src`,
-    `${srcFolder}/images/dest`,
     `${srcFolder}/fonts/src`,
-    `${srcFolder}/fonts/dest`,
-    `${srcFolder}/components/header`,
-    `${srcFolder}/components/main`,
-    `${srcFolder}/components/footer`,
+    `${struct.components}/header`,
+    `${struct.components}/main`,
+    `${struct.components}/footer`,
   ];
 
   folders.forEach((dir) => {
@@ -116,37 +97,46 @@ console.log("Gulp работает, структура (H-M-F) готова!");`
     },
 
     // Header
-    { path: `${srcFolder}/components/header/header.html`, content: headerHTML },
     {
-      path: `${srcFolder}/components/header/header.${preprocessor}`,
+      path: `${struct.components}/header/header.html`,
+      content: `<header class="header">\n  <div class="container">\n    <h1>Header Component</h1>\n  </div>\n</header>`,
+    },
+    {
+      path: `${struct.components}/header/header.${preprocessor}`,
       content: ".header { padding: 20px; background: #f4f4f4; }",
     },
     {
-      path: `${srcFolder}/components/header/header.js`,
+      path: `${struct.components}/header/header.js`,
       content:
         "export const header = () => {\n  console.log('Header JS Loaded');\n};",
     },
 
     // Main
-    { path: `${srcFolder}/components/main/main.html`, content: mainHTML },
     {
-      path: `${srcFolder}/components/main/main.${preprocessor}`,
+      path: `${struct.components}/main/main.html`,
+      content: `<main class="main">\n  <div class="container">\n    <h2>Главный контент собран из модулей</h2>\n  </div>\n</main>`,
+    },
+    {
+      path: `${struct.components}/main/main.${preprocessor}`,
       content: ".main { flex: 1 1 auto; padding: 40px 0; }",
     },
     {
-      path: `${srcFolder}/components/main/main.js`,
+      path: `${struct.components}/main/main.js`,
       content:
         "export const main = () => {\n  console.log('Main JS Loaded');\n};",
     },
 
     // Footer
-    { path: `${srcFolder}/components/footer/footer.html`, content: footerHTML },
     {
-      path: `${srcFolder}/components/footer/footer.${preprocessor}`,
+      path: `${struct.components}/footer/footer.html`,
+      content: `<footer class="footer">\n  <div class="container">\n    <p>Footer Component</p>\n  </div>\n</footer>`,
+    },
+    {
+      path: `${struct.components}/footer/footer.${preprocessor}`,
       content: ".footer { padding: 20px; background: #333; color: #fff; }",
     },
     {
-      path: `${srcFolder}/components/footer/footer.js`,
+      path: `${struct.components}/footer/footer.js`,
       content:
         "export const footer = () => {\n  console.log('Footer JS Loaded');\n};",
     },

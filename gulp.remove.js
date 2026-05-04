@@ -1,79 +1,105 @@
 import fs from "fs";
 import { config } from "./gulp.config.js";
 
+const protectedNames = [
+  "js",
+  "scss",
+  "html",
+  "img",
+  "fonts",
+  "components",
+  "modules",
+  "src",
+  "dist",
+];
+
 export const remove = (done) => {
   const blockName = process.argv
     .find((arg) => arg.startsWith("--"))
     ?.replace("--", "");
 
   if (!blockName) {
+    console.log("\n❌ Ошибка: Укажите имя! Пример: gulp remove --header\n");
+    return done();
+  }
+
+  // ЗАЩИТА: Проверка должна быть здесь, когда blockName уже известен
+  if (protectedNames.includes(blockName.toLowerCase())) {
     console.log(
-      "\n❌ Ошибка: Укажите имя блока! Пример: gulp remove --header\n",
+      `\n❌ Ошибка: Удаление системной папки "${blockName}" запрещено!\n`,
     );
     return done();
   }
 
-  const dirPath = `${config.srcFolder}/components/${blockName}`;
+  // Список всех мест, где может лежать папка
+    const possibleDirs = [
+      `${config.structure.components}/${blockName}`,
+      `${config.structure.modules}/${blockName}`,
+      `${config.structure.plugins}/${blockName}`,
+    ];
+
   const mainJsPath = `${config.srcFolder}/js/app.js`;
-  // ИСПРАВЛЕНО: Теперь ищем style.scss
   const mainScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
   const indexHtmlPath = `${config.srcFolder}/index.html`;
 
-  // 1. Удаление папки компонента
-  if (fs.existsSync(dirPath)) {
-    fs.rmSync(dirPath, { recursive: true, force: true });
-    console.log(`\n🗑️ Папка компонента "${blockName}" удалена.`);
-  } else {
-    console.log(`\n⚠️ Папка компонента "${blockName}" не найдена.`);
+  // 1. Удаление физической папки
+  let dirDeleted = false;
+  possibleDirs.forEach((dir) => {
+    if (fs.existsSync(dir)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+      console.log(`🗑️ Папка удалена: ${dir}`);
+      dirDeleted = true;
+    }
+  });
+
+  if (!dirDeleted) {
+    console.log(
+      `⚠️ Папка для "${blockName}" не найдена в компонентах или модулях.`,
+    );
   }
 
-  // 2. Чистка JS (вырезаем импорт и вызов)
+  // 2. Чистка JS
   if (fs.existsSync(mainJsPath)) {
     let jsContent = fs.readFileSync(mainJsPath, "utf8");
-
-    // Ищет импорты с любым префиксом (@/.. или ..)
     const jsImportReg = new RegExp(
-      `import { ${blockName} } from "(@/\\.\\.|\\.\\.)/components/${blockName}/${blockName}\\.js";\\n?`,
+      `import\\s+{[^}]*${blockName}[^}]*}\\s+from\\s+['"].*?${blockName}/${blockName}\\.js['"];?\\n?`,
       "g",
     );
-    const jsCallReg = new RegExp(`${blockName}\\(\\);\\n?`, "g");
+    const jsCallReg = new RegExp(`${blockName}\\(\\);?\\n?`, "g");
 
     jsContent = jsContent.replace(jsImportReg, "").replace(jsCallReg, "");
     fs.writeFileSync(mainJsPath, jsContent);
     console.log("✂️ Импорты JS удалены.");
   }
 
-  // 3. Чистка SCSS (вырезаем @use)
+  // 3. Чистка SCSS
   if (fs.existsSync(mainScssPath)) {
     let scssContent = fs.readFileSync(mainScssPath, "utf8");
     const scssImportReg = new RegExp(
-      `@use "../components/${blockName}/${blockName}";\\n?`,
+      `@use\\s+['"].*?${blockName}['"](\\s+as\\s+\\w+)?\\s*;?\\n?`,
       "g",
     );
 
     scssContent = scssContent.replace(scssImportReg, "");
     fs.writeFileSync(mainScssPath, scssContent);
-    // ИСПРАВЛЕНО: Текст лога для style.scss
     console.log(`✂️ Стили удалены из style.${config.preprocessor}`);
   }
 
-  // 4. Чистка HTML (вырезаем @@include)
+  // 4. Чистка HTML
   if (fs.existsSync(indexHtmlPath)) {
     let htmlContent = fs.readFileSync(indexHtmlPath, "utf8");
     const htmlIncludeReg = new RegExp(
-      `@@include\\("components/${blockName}/${blockName}.html"\\)\\n?`,
+      `@@include\\(['"].*?${blockName}/${blockName}.html['"]\\)\\n?`,
       "g",
     );
 
-    htmlContent = htmlContent.replace(htmlIncludeReg, "");
-
-    // Убираем лишние пустые строки, которые могли остаться
-    htmlContent = htmlContent.replace(/\n\s*\n\n/g, "\n\n");
-
+    htmlContent = htmlContent
+      .replace(htmlIncludeReg, "")
+      .replace(/\n\s*\n\n/g, "\n\n");
     fs.writeFileSync(indexHtmlPath, htmlContent);
     console.log("✂️ Инклуд удален из HTML.");
   }
 
-  console.log(`\n✅ Блок "${blockName}" полностью вырезан из проекта.\n`);
+  console.log(`\n✅ "${blockName}" полностью вырезан из проекта.\n`);
   done();
 };
