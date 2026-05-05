@@ -14,3 +14,8 @@ trim_trailing_whitespace = false
 
 [package.json]
 indent_size = 2
+
+[*.{ts,tsx}]
+indent_style = space
+indent_size = 2
+quote_type = single

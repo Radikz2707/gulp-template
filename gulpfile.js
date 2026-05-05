@@ -10,6 +10,7 @@ import { module } from "./gulp.module.js";
 import gulp from "gulp";
 import { exec } from "child_process";
 import fs from "fs";
+import path from "path";
 
 // --- 3. Сервер и уведомления ---
 import browserSync from "browser-sync";
@@ -143,22 +144,28 @@ export function scripts() {
           mode: "production",
           performance: { hints: false },
           entry: {
-            app: `./${srcFolder}/js/app.js`,
+            // МЕНЯЕМ расширение на .ts
+            app: `./${srcFolder}/js/app.ts`,
           },
           output: {
             filename: "app.min.js",
           },
-          // --- ДОБАВЬТЕ ЭТОТ БЛОК ---
           resolve: {
             alias: {
-              // Указываем Webpack, что @ означает папку src/js
-              "@": Buffer.from(process.cwd() + `/${srcFolder}/js`).toString(),
+              // Используем process.cwd() вместо __dirname
+              "@": path.resolve(process.cwd(), `${srcFolder}/js`),
+              "@comp": path.resolve(process.cwd(), `${srcFolder}/components`),
             },
-            extensions: [".js", ".json"],
+            extensions: [".ts", ".js", ".json"],
           },
-          // --------------------------
           module: {
             rules: [
+              // ДОБАВЛЯЕМ правило для TypeScript
+              {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                use: "ts-loader",
+              },
               {
                 test: /\.m?js$/,
                 exclude: /(node_modules)/,

@@ -9,18 +9,18 @@ export const help = (done) => {
 
   console.log(`
 ${c.cyan}${c.bold}==========================================
-🚀  GULP TEMPLATE — ШПАРГАЛКА
+🚀  GULP + TYPESCRIPT — ШПАРГАЛКА
 ==========================================${c.reset}
 ${c.green}${c.bold}npm run dev${c.reset}          — запуск сервера и разработки
 ${c.green}${c.bold}npm run build${c.reset}        — финальная сборка (сжатие, ZIP)
-${c.green}${c.bold}npm run lint${c.reset}         — проверка кода (JS/SCSS/HTML)
+${c.green}${c.bold}npm run lint${c.reset}         — проверка кода (TS/SCSS/HTML)
 ${c.green}${c.bold}npm run clean${c.reset}        — полная очистка папки dist
 
 ${c.cyan}${c.bold}КОНСТРУКТОР КОМПОНЕНТОВ:${c.reset}
-${c.yellow}${c.bold}gulp create --имя${c.reset}    — создать БЛОК (HTML + SCSS + JS)
+${c.yellow}${c.bold}gulp create --имя${c.reset}    — создать БЛОК (HTML + SCSS + TS)
                           ${c.cyan}* для секций сайта (header, hero, services)${c.reset}
 
-${c.yellow}${c.bold}gulp module --имя${c.reset}    — создать МОДУЛЬ (JS + SCSS)
+${c.yellow}${c.bold}gulp module --имя${c.reset}    — создать МОДУЛЬ (TS + SCSS)
                           ${c.cyan}* для логики и скриптов (slider, forms, tabs)${c.reset}
 
 ${c.yellow}${c.bold}gulp remove --имя${c.reset}    — УДАЛИТЬ компонент или модуль

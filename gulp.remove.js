@@ -13,6 +13,11 @@ const protectedNames = [
   "dist",
 ];
 
+// Функция для превращения блока-имени в блокИмя (для поиска вызова функции в TS)
+const toCamelCase = (str) => {
+  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+};
+
 export const remove = (done) => {
   const blockName = process.argv
     .find((arg) => arg.startsWith("--"))
@@ -23,7 +28,6 @@ export const remove = (done) => {
     return done();
   }
 
-  // ЗАЩИТА: Проверка должна быть здесь, когда blockName уже известен
   if (protectedNames.includes(blockName.toLowerCase())) {
     console.log(
       `\n❌ Ошибка: Удаление системной папки "${blockName}" запрещено!\n`,
@@ -31,14 +35,14 @@ export const remove = (done) => {
     return done();
   }
 
-  // Список всех мест, где может лежать папка
-    const possibleDirs = [
-      `${config.structure.components}/${blockName}`,
-      `${config.structure.modules}/${blockName}`,
-      `${config.structure.plugins}/${blockName}`,
-    ];
+  const possibleDirs = [
+    `${config.structure.components}/${blockName}`,
+    `${config.structure.modules}/${blockName}`,
+    `${config.structure.plugins}/${blockName}`,
+  ];
 
-  const mainJsPath = `${config.srcFolder}/js/app.js`;
+  // ИЗМЕНЕНО: теперь ищем app.ts
+  const mainJsPath = `${config.srcFolder}/js/app.ts`;
   const mainScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
   const indexHtmlPath = `${config.srcFolder}/index.html`;
 
@@ -53,23 +57,24 @@ export const remove = (done) => {
   });
 
   if (!dirDeleted) {
-    console.log(
-      `⚠️ Папка для "${blockName}" не найдена в компонентах или модулях.`,
-    );
+    console.log(`⚠️ Папка для "${blockName}" не найдена.`);
   }
 
-  // 2. Чистка JS
+  // 2. Чистка TS (Обновленные регулярные выражения для алиасов)
   if (fs.existsSync(mainJsPath)) {
     let jsContent = fs.readFileSync(mainJsPath, "utf8");
+    const camelName = toCamelCase(blockName);
+
+    // Регулярка ищет импорты через @, @comp или ../ (без учета расширения .js/.ts)
     const jsImportReg = new RegExp(
-      `import\\s+{[^}]*${blockName}[^}]*}\\s+from\\s+['"].*?${blockName}/${blockName}\\.js['"];?\\n?`,
+      `import\\s+{[^}]*${camelName}[^}]*}\\s+from\\s+['"](@|@comp|\\.\\.\\/|\\.\\/).*?${blockName}\\/?${blockName}?['"];?\\n?`,
       "g",
     );
-    const jsCallReg = new RegExp(`${blockName}\\(\\);?\\n?`, "g");
+    const jsCallReg = new RegExp(`${camelName}\\(\\);?\\n?`, "g");
 
     jsContent = jsContent.replace(jsImportReg, "").replace(jsCallReg, "");
     fs.writeFileSync(mainJsPath, jsContent);
-    console.log("✂️ Импорты JS удалены.");
+    console.log("✂️ Импорты и вызовы TS удалены.");
   }
 
   // 3. Чистка SCSS
@@ -100,6 +105,6 @@ export const remove = (done) => {
     console.log("✂️ Инклуд удален из HTML.");
   }
 
-  console.log(`\n✅ "${blockName}" полностью вырезан из проекта.\n`);
+  console.log(`\n✅ "${blockName}" успешно удален из проекта.\n`);
   done();
 };

@@ -7,7 +7,7 @@
 
 html, body { width: 100%; min-width: 320px; height: 100%;
  font-size: 100%; line-height: 1; -webkit-font-smoothing: antialiased; }
-html { scroll-behavior: smooth; scrollbar-gutter: stable; }
+html { scroll-behavior: smooth; }
 body { display: flex; flex-direction: column; } /* Чтобы прижать футер */
 nav, footer, header, main, aside, section { display: block; }
 

@@ -25,7 +25,7 @@ export const config = {
       output: "app.min.css",
     },
     scripts: {
-      src: `${srcFolder}/js/app.js`,
+      src: `${srcFolder}/js/app.ts`,
       dest: `${buildFolder}/js/`,
       output: "app.min.js",
     },

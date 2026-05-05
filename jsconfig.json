@@ -3,14 +3,20 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "baseUrl": ".",
-    /* ОТКЛЮЧАЕМ СТРОГУЮ ПРОВЕРКУ ТИПОВ ДЛЯ JS */
-    "checkJs": false,
-    "allowJs": true,
-    /* УБИРАЕМ ОШИБКУ BASEURL (для новых версий TS в VS Code) */
     "ignoreDeprecations": "6.0",
+
+    /* Работа с файлами */
+    "allowJs": true,
+    "checkJs": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Пути (BaseUrl можно оставить, если стоит ignoreDeprecations) */
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/js/*"]
+      "@/*": ["./src/js/*"],
+      "@comp/*": ["./src/components/*"]
     }
   },
   "include": ["src/**/*"],

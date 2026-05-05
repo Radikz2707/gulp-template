@@ -17,7 +17,9 @@ export const module = (done) => {
 
   const camelName = toCamelCase(name);
   const dirPath = `${config.structure.modules}/${name}`;
-  const appJsPath = `${config.srcFolder}/js/app.js`;
+
+  // ИЗМЕНЕНО: теперь ищем app.ts
+  const appJsPath = `${config.srcFolder}/js/app.ts`;
   const styleScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
 
   if (fs.existsSync(dirPath)) {
@@ -26,16 +28,20 @@ export const module = (done) => {
   }
 
   fs.mkdirSync(dirPath, { recursive: true });
+
+  // ИЗМЕНЕНО: Создаем .ts файл вместо .js
   fs.writeFileSync(
-    `${dirPath}/${name}.js`,
-    `export const ${camelName} = () => {\n  console.log("Модуль ${name} инициализирован");\n};\n`,
+    `${dirPath}/${name}.ts`,
+    `export const ${camelName} = (): void => {\n  console.log("Модуль ${name} (TS) инициализирован");\n};\n`,
   );
+
   fs.writeFileSync(`${dirPath}/${name}.scss`, `.${name} {\n  \n}\n`);
 
+  // ИЗМЕНЕНО: Импорт в app.ts через алиас @ и без расширения .js
   if (fs.existsSync(appJsPath)) {
     fs.appendFileSync(
       appJsPath,
-      `\nimport { ${camelName} } from "@/modules/${name}/${name}.js";\n${camelName}();\n`,
+      `\nimport { ${camelName} } from "@/modules/${name}/${name}";\n${camelName}();\n`,
     );
   }
 
@@ -46,6 +52,6 @@ export const module = (done) => {
     );
   }
 
-  console.log(`\n✅ Модуль "${name}" (JS: ${camelName}) создан!\n`);
+  console.log(`\n✅ Модуль "${name}" (TS: ${camelName}) успешно создан!\n`);
   done();
 };

@@ -2,7 +2,6 @@ import fs from "fs";
 import { config } from "./gulp.config.js";
 
 export function createStructure(done) {
-  // Используем значения из конфига
   const srcFolder = config.srcFolder || "src";
   const preprocessor = config.preprocessor || "scss";
   const struct = config.structure;
@@ -15,7 +14,7 @@ export function createStructure(done) {
 :focus-visible { outline: 2px solid #2196f3; outline-offset: 2px; }
 html, body { height: 100%; width: 100%; min-width: 320px; font-size: 100%; line-height: 1; -webkit-font-smoothing: antialiased; }
 html { scroll-behavior: smooth; scrollbar-gutter: stable; }
-body { display: flex; flex-direction: column; } /* Чтобы прижать футер */
+body { display: flex; flex-direction: column; }
 nav, footer, header, main, aside, section { display: block; }
 input, button, textarea, select { font-family: inherit; font-size: inherit; background-color: transparent; outline: none; }
 button { cursor: pointer; color: inherit; -webkit-appearance: none; appearance: none; }
@@ -25,17 +24,14 @@ ul li { list-style: none; }
 img, svg, video, canvas { display: block; max-width: 100%; height: auto; }
 h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
 table { border-collapse: collapse; border-spacing: 0; }
-[hidden] { display: none !important; }
-@media (prefers-reduced-motion: reduce) {
-  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
-}`;
+[hidden] { display: none !important; }`;
 
   const indexHTML = `<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Modular Project</title>
+  <title>TypeScript Gulp Project</title>
   <link rel="stylesheet" href="css/app.min.css">
 </head>
 <body>
@@ -53,17 +49,18 @@ table { border-collapse: collapse; border-spacing: 0; }
 @use "../components/main/main";
 @use "../components/footer/footer";`;
 
-  const appJsContent = `import { header } from "@/../components/header/header.js";
-import { main } from "@/../components/main/main.js";
-import { footer } from "@/../components/footer/footer.js";
+  // ИЗМЕНЕНО: Содержимое для app.ts (используем алиас @comp и TS синтаксис)
+  const appJsContent = `import { header } from "@comp/header/header";
+import { main } from "@comp/main/main";
+import { footer } from "@comp/footer/footer";
 
 header();
 main();
 footer();
 
-console.log("Gulp работает, структура (H-M-F) готова!");`;
+console.log("Gulp + TypeScript работает!");`;
 
-  // 2. СПИСОК ПАПОК ДЛЯ СОЗДАНИЯ (на основе конфига)
+  // 2. СПИСОК ПАПОК
   const folders = [
     srcFolder,
     `${srcFolder}/${preprocessor}/base`,
@@ -83,10 +80,11 @@ console.log("Gulp работает, структура (H-M-F) готова!");`
     }
   });
 
-  // 3. СПИСОК ФАЙЛОВ ДЛЯ СОЗДАНИЯ
+  // 3. СПИСОК ФАЙЛОВ
   const files = [
     { path: `${srcFolder}/index.html`, content: indexHTML },
-    { path: `${srcFolder}/js/app.js`, content: appJsContent },
+    // ИЗМЕНЕНО: Создаем app.ts
+    { path: `${srcFolder}/js/app.ts`, content: appJsContent },
     {
       path: `${srcFolder}/${preprocessor}/style.${preprocessor}`,
       content: styleSCSS,
@@ -96,7 +94,7 @@ console.log("Gulp работает, структура (H-M-F) готова!");`
       content: zeroContent,
     },
 
-    // Header
+    // Header (ИЗМЕНЕНО на .ts)
     {
       path: `${struct.components}/header/header.html`,
       content: `<header class="header">\n  <div class="container">\n    <h1>Header Component</h1>\n  </div>\n</header>`,
@@ -106,27 +104,27 @@ console.log("Gulp работает, структура (H-M-F) готова!");`
       content: ".header { padding: 20px; background: #f4f4f4; }",
     },
     {
-      path: `${struct.components}/header/header.js`,
+      path: `${struct.components}/header/header.ts`,
       content:
-        "export const header = () => {\n  console.log('Header JS Loaded');\n};",
+        "export const header = (): void => {\n  console.log('Header TS Loaded');\n};",
     },
 
-    // Main
+    // Main (ИЗМЕНЕНО на .ts)
     {
       path: `${struct.components}/main/main.html`,
-      content: `<main class="main">\n  <div class="container">\n    <h2>Главный контент собран из модулей</h2>\n  </div>\n</main>`,
+      content: `<main class="main">\n  <div class="container">\n    <h2>Main Content</h2>\n  </div>\n</main>`,
     },
     {
       path: `${struct.components}/main/main.${preprocessor}`,
       content: ".main { flex: 1 1 auto; padding: 40px 0; }",
     },
     {
-      path: `${struct.components}/main/main.js`,
+      path: `${struct.components}/main/main.ts`,
       content:
-        "export const main = () => {\n  console.log('Main JS Loaded');\n};",
+        "export const main = (): void => {\n  console.log('Main TS Loaded');\n};",
     },
 
-    // Footer
+    // Footer (ИЗМЕНЕНО на .ts)
     {
       path: `${struct.components}/footer/footer.html`,
       content: `<footer class="footer">\n  <div class="container">\n    <p>Footer Component</p>\n  </div>\n</footer>`,
@@ -136,9 +134,9 @@ console.log("Gulp работает, структура (H-M-F) готова!");`
       content: ".footer { padding: 20px; background: #333; color: #fff; }",
     },
     {
-      path: `${struct.components}/footer/footer.js`,
+      path: `${struct.components}/footer/footer.ts`,
       content:
-        "export const footer = () => {\n  console.log('Footer JS Loaded');\n};",
+        "export const footer = (): void => {\n  console.log('Footer TS Loaded');\n};",
     },
   ];
 
@@ -148,6 +146,6 @@ console.log("Gulp работает, структура (H-M-F) готова!");`
     }
   });
 
-  console.log("✅ Инициализация модульной структуры (H-M-F) завершена!");
+  console.log("✅ Модульная структура на TypeScript (H-M-F) создана!");
   done();
 }

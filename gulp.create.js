@@ -18,7 +18,9 @@ export const create = (done) => {
 
   const camelName = toCamelCase(blockName);
   const dirPath = `${config.structure.components}/${blockName}`;
-  const mainJsPath = `${config.srcFolder}/js/app.js`;
+
+  // ИЗМЕНЕНО: Теперь ищем app.ts
+  const mainJsPath = `${config.srcFolder}/js/app.ts`;
   const mainScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
   const indexHtmlPath = `${config.srcFolder}/index.html`;
 
@@ -30,28 +32,32 @@ export const create = (done) => {
   fs.mkdirSync(dirPath, { recursive: true });
   fs.mkdirSync(`${dirPath}/img`, { recursive: true });
 
-  // Файлы
+  // 1. Создаем HTML
   fs.writeFileSync(
     `${dirPath}/${blockName}.html`,
     `<section class="${blockName}">\n\t<div class="${blockName}__container container">\n\t\t\n\t</div>\n</section>`,
   );
+
+  // 2. Создаем стили (SCSS)
   fs.writeFileSync(
     `${dirPath}/${blockName}.${config.preprocessor}`,
     `.${blockName} {\n\t\n}`,
   );
 
-  // JS с CamelCase именем функции
+  // 3. ИЗМЕНЕНО: Создаем .ts файл вместо .js
   fs.writeFileSync(
-    `${dirPath}/${blockName}.js`,
-    `export const ${camelName} = () => {\n\tconsole.log("Блок ${blockName} инициализирован");\n};\n`,
+    `${dirPath}/${blockName}.ts`,
+    `export const ${camelName} = () => {\n\tconsole.log("Блок ${blockName} (TS) инициализирован");\n};\n`,
   );
 
+  // 4. ИЗМЕНЕНО: Добавляем импорт в app.ts через алиас @comp
   if (fs.existsSync(mainJsPath)) {
-    const jsImport = `import { ${camelName} } from "@/../components/${blockName}/${blockName}.js";\n`;
+    const jsImport = `import { ${camelName} } from "@comp/${blockName}/${blockName}";\n`;
     const jsCall = `${camelName}();\n`;
     fs.appendFileSync(mainJsPath, `\n${jsImport}${jsCall}`);
   }
 
+  // 5. Добавляем импорт в основной файл стилей
   if (fs.existsSync(mainScssPath)) {
     fs.appendFileSync(
       mainScssPath,
@@ -59,27 +65,23 @@ export const create = (done) => {
     );
   }
 
+  // 6. Добавляем инклюд в index.html
   if (fs.existsSync(indexHtmlPath)) {
     let htmlContent = fs.readFileSync(indexHtmlPath, "utf8");
     const includeString = `@@include("components/${blockName}/${blockName}.html")\n`;
-
-    // 1. Ищем тег скрипта, чтобы вставиться ПЕРЕД ним
     const scriptTag = '<script src="js/app.min.js"></script>';
 
     if (htmlContent.includes(scriptTag)) {
-      // 2. Если скрипт найден, вставляем инклюд ПЕРЕД ним
       htmlContent = htmlContent.replace(
         scriptTag,
         `${includeString}${scriptTag}`,
       );
     } else {
-      // 3. Если скрипта нет, вставляем перед закрывающим body
       htmlContent = htmlContent.replace("</body>", `${includeString}</body>`);
     }
-
     fs.writeFileSync(indexHtmlPath, htmlContent);
   }
 
-  console.log(`\n✅ Блок "${blockName}" (JS: ${camelName}) создан!\n`);
+  console.log(`\n✅ Блок "${blockName}" (TS: ${camelName}) успешно создан!\n`);
   done();
 };
