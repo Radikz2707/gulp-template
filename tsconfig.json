@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
-    "noEmit": true,
+    "noEmit": false,
+    "outDir": "dist/js",
+    "rootDir": "src",
+    "declaration": false,
     "target": "ESNext",
     "module": "ESNext",
     "lib": ["DOM", "ESNext"],
@@ -12,7 +15,8 @@
     "skipLibCheck": true,
     "paths": {
       "@/*": ["./src/js/*"],
-      "@comp/*": ["./src/components/*"]
+      "@comp/*": ["./src/components/*"],
+      "@plugins/*": ["./src/js/plugins/*"]
     },
     "allowJs": true,
     "forceConsistentCasingInFileNames": true

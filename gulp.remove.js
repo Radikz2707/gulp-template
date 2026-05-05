@@ -70,10 +70,13 @@ export const remove = (done) => {
       `import\\s+{[^}]*${camelName}[^}]*}\\s+from\\s+['"](@|@comp|\\.\\.\\/|\\.\\/).*?${blockName}\\/?${blockName}?['"];?\\n?`,
       "g",
     );
-    const jsCallReg = new RegExp(`${camelName}\\(\\);?\\n?`, "g");
+    const jsCallReg = new RegExp(`\\b${camelName}\\(\\);?\\n?`, "g");
 
-    jsContent = jsContent.replace(jsImportReg, "").replace(jsCallReg, "");
-    fs.writeFileSync(mainJsPath, jsContent);
+    jsContent = jsContent
+      .replace(jsImportReg, "")
+      .replace(jsCallReg, "")
+      .replace(/\n{3,}/g, "\n\n"); // Убираем пустоты в коде
+    fs.writeFileSync(mainJsPath, jsContent.trim() + "\n"); // trim() и перевод строки в конце
     console.log("✂️ Импорты и вызовы TS удалены.");
   }
 
@@ -85,8 +88,10 @@ export const remove = (done) => {
       "g",
     );
 
-    scssContent = scssContent.replace(scssImportReg, "");
-    fs.writeFileSync(mainScssPath, scssContent);
+    scssContent = scssContent
+      .replace(scssImportReg, "")
+      .replace(/\n{3,}/g, "\n\n"); // Убираем пустоты в стилях
+    fs.writeFileSync(mainScssPath, scssContent.trim() + "\n");
     console.log(`✂️ Стили удалены из style.${config.preprocessor}`);
   }
 
@@ -100,8 +105,10 @@ export const remove = (done) => {
 
     htmlContent = htmlContent
       .replace(htmlIncludeReg, "")
-      .replace(/\n\s*\n\n/g, "\n\n");
-    fs.writeFileSync(indexHtmlPath, htmlContent);
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    // Добавляем + "\n", чтобы в конце файла был один аккуратный перенос
+    fs.writeFileSync(indexHtmlPath, htmlContent + "\n");
     console.log("✂️ Инклуд удален из HTML.");
   }
 
