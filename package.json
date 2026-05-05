@@ -4,6 +4,9 @@
   "type": "module",
   "author": "Radik Zalalov",
   "license": "ISC",
+  "publishConfig": {
+    "registry": "https://npmmirror.com"
+  },
   "scripts": {
     "dev": "gulp",
     "build": "gulp build",
