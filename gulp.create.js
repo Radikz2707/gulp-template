@@ -31,20 +31,29 @@ export const create = (done) => {
   fs.mkdirSync(dirPath, { recursive: true });
   fs.mkdirSync(`${dirPath}/img`, { recursive: true });
 
-  // 1. Определение семантического тега
+  // 1. Определение семантического тега через switch
   let tag;
   switch (blockName) {
     case "header":
-      tag = "header";
+      tag = "header"; // Шапка сайта (логотип, меню)
       break;
     case "footer":
-      tag = "footer";
+      tag = "footer"; // Подвал сайта (контакты, копирайт)
       break;
     case "main":
-      tag = "main";
+      tag = "main"; // Основное содержимое страницы (уникальное для каждой страницы)
+      break;
+    case "nav":
+      tag = "nav"; // Навигационные блоки (основное меню, хлебные крошки)
+      break;
+    case "aside":
+      tag = "aside"; // Побочный контент (сайдбар, боковая панель, реклама)
+      break;
+    case "article":
+      tag = "article"; // Независимый контент (пост в блоге, новость, карточка товара)
       break;
     default:
-      tag = "section";
+      tag = "section"; // Тематический раздел страницы (преимущества, услуги, контакты)
   }
 
   // 2. Создаем HTML файл с правильной вложенностью
@@ -119,4 +128,4 @@ export const create = (done) => {
 
   console.log(`\n✅ Блок "${blockName}" (TS: ${camelName}) успешно создан!\n`);
   done();
-};;;
+};;;;
