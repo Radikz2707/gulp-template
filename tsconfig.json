@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES6",
+    "noEmit": true,
+    "target": "ESNext",
     "module": "ESNext",
     "lib": ["DOM", "ESNext"],
     "moduleResolution": "Bundler",
