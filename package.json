@@ -17,6 +17,9 @@
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.5",
+    "@types/browser-sync": "^2.29.1",
+    "@types/gulp": "^4.0.18",
+    "@types/node": "^25.6.0",
     "ajv": "^8.20.0",
     "ajv-keywords": "^5.1.0",
     "babel-loader": "^10.1.1",

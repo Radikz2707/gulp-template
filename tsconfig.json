@@ -3,13 +3,13 @@
     "noEmit": false,
     "outDir": "dist/js",
     "rootDir": "src",
-    "declaration": false,
     "target": "ESNext",
     "module": "ESNext",
     "lib": ["DOM", "ESNext"],
     "moduleResolution": "Bundler",
     "ignoreDeprecations": "5.0",
-    "strict": false,
+    "strict": true, // <--- ИЗМЕНЕНО: включи строгость для реальной пользы
+    "isolatedModules": true, // <--- ДОБАВЛЕНО: для корректной работы с Webpack
     "sourceMap": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
