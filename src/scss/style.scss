@@ -1,4 +1,13 @@
 @use "base/zero";
+
+@use "../components/nav/nav";
 @use "../components/header/header";
 @use "../components/main/main";
 @use "../components/footer/footer";
+
+main {
+   /* 1 (grow) - растягиваться */
+   /* 1 (shrink) - сжиматься при необходимости */
+   /* auto (basis) - брать размер в зависимости от контента */
+   flex: 1 1 auto;
+}

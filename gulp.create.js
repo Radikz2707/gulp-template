@@ -19,7 +19,6 @@ export const create = (done) => {
   const camelName = toCamelCase(blockName);
   const dirPath = `${config.structure.components}/${blockName}`;
 
-  // ИЗМЕНЕНО: Теперь ищем app.ts
   const mainJsPath = `${config.srcFolder}/js/app.ts`;
   const mainScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
   const indexHtmlPath = `${config.srcFolder}/index.html`;
@@ -32,40 +31,76 @@ export const create = (done) => {
   fs.mkdirSync(dirPath, { recursive: true });
   fs.mkdirSync(`${dirPath}/img`, { recursive: true });
 
-  // 1. Создаем HTML
+  // 1. Определение семантического тега
+  let tag;
+  switch (blockName) {
+    case "header":
+      tag = "header";
+      break;
+    case "footer":
+      tag = "footer";
+      break;
+    case "main":
+      tag = "main";
+      break;
+    default:
+      tag = "section";
+  }
+
+  // 2. Создаем HTML файл с правильной вложенностью
   fs.writeFileSync(
     `${dirPath}/${blockName}.html`,
-    `<section class="${blockName}">\n\t<div class="${blockName}__container container">\n\t\t\n\t</div>\n</section>`,
+    `<${tag} class="${blockName}">\n\t<div class="${blockName}__container container">\n\t\t\n\t</div>\n</${tag}>`,
   );
 
-  // 2. Создаем стили (SCSS)
+  // 3. Создаем стили (SCSS)
   fs.writeFileSync(
     `${dirPath}/${blockName}.${config.preprocessor}`,
     `.${blockName} {\n\t\n}`,
   );
 
-  // 3. ИЗМЕНЕНО: Создаем .ts файл вместо .js
+  // 4. Создаем .ts файл
   fs.writeFileSync(
     `${dirPath}/${blockName}.ts`,
     `export const ${camelName} = () => {\n\tconsole.log("Блок ${blockName} (TS) инициализирован");\n};\n`,
   );
 
-  // 4. ИЗМЕНЕНО: Добавляем импорт в app.ts через алиас @comp
+  // 5. Добавляем импорт в app.ts через алиас @comp и вызов функции
   if (fs.existsSync(mainJsPath)) {
     const jsImport = `import { ${camelName} } from "@comp/${blockName}/${blockName}";\n`;
     const jsCall = `${camelName}();\n`;
     fs.appendFileSync(mainJsPath, `\n${jsImport}${jsCall}`);
   }
 
-  // 5. Добавляем импорт в основной файл стилей
+  // 6. Умное добавление импорта стилей
   if (fs.existsSync(mainScssPath)) {
-    fs.appendFileSync(
-      mainScssPath,
-      `\n@use "../components/${blockName}/${blockName}";\n`,
-    );
+    let scssContent = fs.readFileSync(mainScssPath, "utf8");
+    const scssImport = `@use "../components/${blockName}/${blockName}";`;
+    const zeroImport = '@use "base/zero";';
+
+    // Проверяем: есть ли после zero пустая строка?
+    // Регулярка ищет zero + любое количество переносов и пробелов
+    const zeroWithSpaceReg = /@use\s+["']base\/zero["'];\s*\n*/;
+
+    if (scssContent.includes(zeroImport)) {
+      // Вставляем zero, затем ДВА переноса (создаем ту самую пустую строку),
+      // затем новый импорт
+      scssContent = scssContent.replace(
+        zeroWithSpaceReg,
+        `${zeroImport}\n\n${scssImport}\n`,
+      );
+    } else {
+      scssContent = scssImport + "\n" + scssContent;
+    }
+
+    // Схлопываем лишние дыры (больше 2-х переносов в 2)
+    scssContent = scssContent.replace(/\n{3,}/g, "\n\n");
+
+    fs.writeFileSync(mainScssPath, scssContent.trim() + "\n");
+    console.log("🎨 Стили добавлены с учетом пустой строки после zero");
   }
 
-  // 6. Добавляем инклюд в index.html
+  // 7. Добавляем инклюд в index.html перед скриптом
   if (fs.existsSync(indexHtmlPath)) {
     let htmlContent = fs.readFileSync(indexHtmlPath, "utf8");
     const includeString = `@@include("components/${blockName}/${blockName}.html")\n`;
@@ -84,4 +119,4 @@ export const create = (done) => {
 
   console.log(`\n✅ Блок "${blockName}" (TS: ${camelName}) успешно создан!\n`);
   done();
-};
+};;;
