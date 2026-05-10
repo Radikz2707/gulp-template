@@ -70,6 +70,10 @@ const { src, dest, parallel, series, watch } = gulp;
 const sass = gulpSass(dartSass);
 const bs = browserSync.create();
 
+// Проверяем: если в команде запуска есть слово 'build', значит это продакшн
+const isProd = process.argv.includes('build');
+
+
 // --- ОБРАБОТКА ОШИБОК ---
 const onError = function (err) {
   notify.onError({
@@ -135,58 +139,77 @@ export const lintJs = (done) => {
   );
 };
 
-export function scripts() {
-  return src(paths.scripts.src)
-    .pipe(plumber({ errorHandler: onError }))
-    .pipe(
-      webpackStream(
-        {
-          mode: "production",
-          performance: { hints: false },
-          entry: {
-            // МЕНЯЕМ расширение на .ts
-            app: `./${srcFolder}/js/app.ts`,
-          },
-          output: {
-            filename: "app.min.js",
-          },
-          resolve: {
-            alias: {
-              // Используем process.cwd() вместо __dirname
-              "@": path.resolve(process.cwd(), `${srcFolder}/js`),
-              "@comp": path.resolve(process.cwd(), `${srcFolder}/components`),
+export function scripts(done) {
+  let isFirstBuild = true;
+
+  return (
+    src(paths.scripts.src)
+      .pipe(plumber({ errorHandler: onError }))
+      .pipe(
+        webpackStream(
+          {
+            // Если build — "production", если dev — "development"
+            mode: isProd ? "production" : "development",
+
+            // Следим за файлами ТОЛЬКО если это НЕ продакшн
+            watch: !isProd,
+
+            performance: { hints: false },
+            entry: { app: `./${srcFolder}/js/app.ts` },
+            output: { filename: "app.min.js" },
+            resolve: {
+              alias: {
+                "@": path.resolve(process.cwd(), `${srcFolder}/js`),
+                "@comp": path.resolve(process.cwd(), `${srcFolder}/components`),
+              },
+              extensions: [".ts", ".js", ".json"],
             },
-            extensions: [".ts", ".js", ".json"],
-          },
-          module: {
-            rules: [
-              // ДОБАВЛЯЕМ правило для TypeScript
-              {
-                test: /\.ts$/,
-                exclude: /node_modules/,
-                use: "ts-loader",
-              },
-              {
-                test: /\.m?js$/,
-                exclude: /(node_modules)/,
-                use: {
-                  loader: "babel-loader",
-                  options: { presets: ["@babel/preset-env"] },
+            module: {
+              rules: [
+                {
+                  test: /\.ts$/,
+                  exclude: /node_modules/,
+                  use: "ts-loader",
                 },
-              },
-            ],
+                {
+                  test: /\.m?js$/,
+                  exclude: /(node_modules)/,
+                  use: {
+                    loader: "babel-loader",
+                    options: { presets: ["@babel/preset-env"] },
+                  },
+                },
+              ],
+            },
+            // Минимизируем только для продакшена
+            optimization: {
+              minimize: isProd,
+              minimizer: [new TerserPlugin({ extractComments: false })],
+            },
+            // В продакшене тяжелые карты, в деве — легкие и быстрые
+            devtool: isProd ? "source-map" : "eval-cheap-module-source-map",
           },
-          optimization: {
-            minimize: true,
-            minimizer: [new TerserPlugin({ extractComments: false })],
+          webpack,
+          (err, stats) => {
+            if (err) return;
+
+            // Если это разработка (не продакшн) — используем наш callback для done
+            if (!isProd) {
+              if (isFirstBuild) {
+                isFirstBuild = false;
+                done();
+              }
+              bs.reload();
+            }
           },
-          devtool: "source-map",
-        },
-        webpack,
-      ),
-    )
-    .pipe(dest(paths.scripts.dest))
-    .on("end", bs.reload);
+        ),
+      )
+      .pipe(dest(paths.scripts.dest))
+      // Если это продакшн, поток должен завершиться нормально через 'end'
+      .on("end", () => {
+        if (isProd) done();
+      })
+  );
 }
 
 export function styles() {
