@@ -142,74 +142,78 @@ export const lintJs = (done) => {
 export function scripts(done) {
   let isFirstBuild = true;
 
-  return (
-    src(paths.scripts.src)
-      .pipe(plumber({ errorHandler: onError }))
-      .pipe(
-        webpackStream(
-          {
-            // Если build — "production", если dev — "development"
-            mode: isProd ? "production" : "development",
+  return src(paths.scripts.src)
+    .pipe(plumber({ errorHandler: onError }))
+    .pipe(
+      webpackStream(
+        {
+          mode: isProd ? "production" : "development",
+          watch: !isProd,
+          // 🚀 КЭШИРОВАНИЕ НА ДИСК: сократит повторные запуски до 1-2 сек
+          cache: isProd ? false : { type: "filesystem" },
 
-            // Следим за файлами ТОЛЬКО если это НЕ продакшн
-            watch: !isProd,
-
-            performance: { hints: false },
-            entry: { app: `./${srcFolder}/js/app.ts` },
-            output: { filename: "app.min.js" },
-            resolve: {
-              alias: {
-                "@": path.resolve(process.cwd(), `${srcFolder}/js`),
-                "@comp": path.resolve(process.cwd(), `${srcFolder}/components`),
-              },
-              extensions: [".ts", ".js", ".json"],
+          performance: { hints: false },
+          entry: { app: `./${srcFolder}/js/app.ts` },
+          output: { filename: "app.min.js" },
+          resolve: {
+            alias: {
+              "@": path.resolve(process.cwd(), `${srcFolder}/js`),
+              "@comp": path.resolve(process.cwd(), `${srcFolder}/components`),
             },
-            module: {
-              rules: [
-                {
-                  test: /\.ts$/,
-                  exclude: /node_modules/,
-                  use: "ts-loader",
-                },
-                {
-                  test: /\.m?js$/,
-                  exclude: /(node_modules)/,
-                  use: {
-                    loader: "babel-loader",
-                    options: { presets: ["@babel/preset-env"] },
+            extensions: [".ts", ".js", ".json"],
+          },
+          module: {
+            rules: [
+              {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                use: [
+                  {
+                    loader: "ts-loader",
+                    options: {
+                      // 🚀 БЫСТРАЯ СБОРКА: отключаем проверку типов в dev-режиме
+                      transpileOnly: !isProd,
+                    },
                   },
-                },
-              ],
-            },
-            // Минимизируем только для продакшена
-            optimization: {
-              minimize: isProd,
-              minimizer: [new TerserPlugin({ extractComments: false })],
-            },
-            // В продакшене тяжелые карты, в деве — легкие и быстрые
-            devtool: isProd ? "source-map" : "eval-cheap-module-source-map",
+                ],
+              },
+              {
+                test: /\.m?js$/,
+                exclude: /(node_modules)/,
+                // 🚀 ПРОПУСКАЕМ BABEL в разработке для скорости
+                use: isProd
+                  ? {
+                      loader: "babel-loader",
+                      options: { presets: ["@babel/preset-env"] },
+                    }
+                  : "raw-loader", // или просто пропустить этот лоадер в dev
+              },
+            ],
           },
-          webpack,
-          (err, stats) => {
-            if (err) return;
-
-            // Если это разработка (не продакшн) — используем наш callback для done
-            if (!isProd) {
-              if (isFirstBuild) {
-                isFirstBuild = false;
-                done();
-              }
-              bs.reload();
+          optimization: {
+            minimize: isProd,
+            minimizer: [new TerserPlugin({ extractComments: false })],
+          },
+          // 🚀 БЫСТРЫЕ КАРТЫ КОДА
+          devtool: isProd ? "source-map" : "eval-cheap-module-source-map",
+        },
+        webpack,
+        (err, stats) => {
+          if (err) return;
+          if (!isProd) {
+            if (isFirstBuild) {
+              isFirstBuild = false;
+              done();
             }
-          },
-        ),
-      )
-      .pipe(dest(paths.scripts.dest))
-      // Если это продакшн, поток должен завершиться нормально через 'end'
-      .on("end", () => {
-        if (isProd) done();
-      })
-  );
+            bs.reload();
+          }
+        },
+      ),
+    )
+    .pipe(dest(paths.scripts.dest))
+    .on("end", () => {
+      if (isProd) done();
+    });
 }
 
 export function styles() {
@@ -459,17 +463,39 @@ export function fonts(done) {
 export function fontsStyle(done) {
   const extension = preprocessor === "sass" ? "sass" : "scss";
   const fontsFile = `${srcFolder}/${preprocessor}/base/_fonts.${extension}`;
+
+  // Если файл уже есть — не перезаписываем его (чтобы не затереть ручные правки)
   if (fs.existsSync(fontsFile)) return done();
   if (!fs.existsSync(paths.fonts.dest)) return done();
+
   const files = fs.readdirSync(paths.fonts.dest);
   if (files.length > 0) {
     fs.writeFileSync(fontsFile, "");
     let newFileOnly;
+
     files.forEach((file) => {
       const fontFileName = file.split(".")[0];
       if (newFileOnly !== fontFileName) {
         const fontName = fontFileName.split("-")[0] || fontFileName;
-        const fontRecord = `@font-face {\n\tfont-family: "${fontName}";\n\tfont-display: swap;\n\tsrc: url("../fonts/${fontFileName}.woff2") format("woff2");\n\tfont-weight: 400;\n\tfont-style: normal;\n}\n\n`;
+        const fontInfo = fontFileName.toLowerCase();
+
+        // 🚀 Определяем жирность (weight)
+        let fontWeight = 400;
+        if (fontInfo.includes("thin")) fontWeight = 100;
+        else if (fontInfo.includes("extralight")) fontWeight = 200;
+        else if (fontInfo.includes("light")) fontWeight = 300;
+        else if (fontInfo.includes("medium")) fontWeight = 500;
+        else if (fontInfo.includes("semibold")) fontWeight = 600;
+        else if (fontInfo.includes("bold")) fontWeight = 700;
+        else if (fontInfo.includes("extrabold") || fontInfo.includes("heavy"))
+          fontWeight = 800;
+        else if (fontInfo.includes("black")) fontWeight = 900;
+
+        // 🚀 Определяем стиль (italic)
+        let fontStyle = fontInfo.includes("italic") ? "italic" : "normal";
+
+        const fontRecord = `@font-face {\n\tfont-family: "${fontName}";\n\tfont-display: swap;\n\tsrc: url("../fonts/${fontFileName}.woff2") format("woff2");\n\tfont-weight: ${fontWeight};\n\tfont-style: ${fontStyle};\n}\n\n`;
+
         fs.appendFileSync(fontsFile, fontRecord);
         newFileOnly = fontFileName;
       }
@@ -551,20 +577,17 @@ function startwatch() {
 
 export const build = series(
   cleandist,
-  parallel(lintCss, lintJs),
-  parallel(
-    styles,
-    scripts,
-    series(fonts, fontsStyle),
-    images,
-    createWebp,
-    sprite,
-    favs,
-    html,
-  ),
+  // Линтинг можно запустить параллельно с подготовкой шрифтов
+  parallel(lintCss, lintJs, series(fonts, fontsStyle)),
+
+  // Основная сборка
+  parallel(styles, scripts, images, createWebp, sprite, favs, html),
+
+  // Финальные штрихи (только когда всё готово)
   buildcopy,
-  cssPurge,
+  cssPurge, // Очистка CSS должна идти после того, как готов и HTML, и Styles
   zipFiles,
+
   (done) => {
     console.log(
       "\x1b[32m%s\x1b[0m",
@@ -577,14 +600,29 @@ export const build = series(
 // Финальный экспорт для разработки (запуск через gulp или npm run dev)
 // Для разработки
 export default series(
+  // 1. Показываем шпаргалку (мгновенно)
   help,
-  cleandist,
-  favs, // Генерируем один раз при запуске npm run dev
-  series(fonts, fontsStyle),
-  parallel(lintCss, lintJs),
-  parallel(styles, scripts, imagesDev, createWebp, sprite, html),
+
+  // 2. Запускаем подготовку (шрифты и фавиконки)
+  // Убираем cleandist! Очистка нужна только для npm run build
+  parallel(favs, series(fonts, fontsStyle)),
+
+  // 3. САМЫЙ ВАЖНЫЙ ЭТАП: Запускаем ВСЁ остальное одновременно
+  // Линтинг, стили, скрипты и картинки не зависят друг от друга
+  parallel(
+    lintCss,
+    lintJs,
+    styles,
+    scripts,
+    imagesDev,
+    createWebp,
+    sprite,
+    html,
+  ),
+
+  // 4. Финальный перенос и запуск сервера
   buildcopy,
-  parallel(browsersync, startwatch)
+  parallel(browsersync, startwatch),
 );
 
 export {
