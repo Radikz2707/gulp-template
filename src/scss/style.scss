@@ -1,13 +1,16 @@
 @use "base/zero";
 
+// КОМПОНЕНТЫ СТРУКТУРЫ САЙТА
 @use "../components/nav/nav";
 @use "../components/main/main";
 @use "../components/header/header";
 @use "../components/footer/footer";
 
+// ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ
+
 main {
-   /* 1 (grow) - растягиваться */
-   /* 1 (shrink) - сжиматься при необходимости */
-   /* auto (basis) - брать размер в зависимости от контента */
-   flex: 1 1 auto;
+  /* 1 (grow) - растягиваться */
+  /* 1 (shrink) - сжиматься при необходимости */
+  /* auto (basis) - брать размер в зависимости от контента */
+  flex: 1 1 auto;
 }

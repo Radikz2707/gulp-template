@@ -1,10 +1,122 @@
 import fs from "fs";
+import path from "path";
 import { config } from "./gulp.config.js";
 
-// Функция для превращения блока-имени в блокИмя
-const toCamelCase = (str) => {
-  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+// ==========================================
+// ХЕЛПЕРЫ И УТИЛИТЫ
+// ==========================================
+
+/** Конвертация строки из kebab-case в camelCase */
+const toCamelCase = (str) =>
+  str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+
+/** Безопасная запись обновленного контента в файл */
+const updateFileContent = (filePath, modifyCallback) => {
+  if (!fs.existsSync(filePath)) return;
+  const content = fs.readFileSync(filePath, "utf-8");
+  const updatedContent = modifyCallback(content);
+  fs.writeFileSync(filePath, updatedContent.trimEnd() + "\n");
 };
+
+/** Определение HTML тега на основе имени компонента */
+const getSemanticTag = (blockName) => {
+  const tags = ["header", "footer", "main", "nav", "aside", "article"];
+  return tags.includes(blockName) ? blockName : "section";
+};
+
+// ==========================================
+// ЛОГИКА СБОРКИ ФАЙЛОВ
+// ==========================================
+
+/** Инъекция импорта и вызова функции в app.ts */
+const updateAppTs = (filePath, blockName, camelName) => {
+  updateFileContent(filePath, (content) => {
+    const lines = content.split(/\r?\n/);
+    const importLine = `import { ${camelName} } from "@comp/${blockName}/${blockName}";`;
+    const callLine = `${camelName}();`;
+
+    // Вставка импорта перед заголовком динамических модулей
+    const nextBlockIndex = lines.findIndex((line) =>
+      line.includes("ИМПОРТЫ ДИНАМИЧЕСКИХ JS/TS МОДУЛЕЙ"),
+    );
+    if (nextBlockIndex !== -1) {
+      lines.splice(nextBlockIndex, 0, importLine);
+    } else {
+      lines.unshift(importLine);
+    }
+
+    // Вставка вызова функции перед разделом интерактивной логики
+    const interactiveIndex = lines.findIndex((line) =>
+      line.includes("Интерактивные модули логики"),
+    );
+    if (interactiveIndex !== -1) {
+      lines.splice(interactiveIndex, 0, callLine);
+    } else {
+      lines.push(callLine);
+    }
+
+    // Чистка и форматирование кода
+    return (
+      lines
+        .join("\n")
+        // Убираем лишние пустые строки внутри списков импортов
+        .replace(/(import\s+.*?;)\n\s*\n\s*(import\s+.*?;)/gi, "$1\n$2")
+        // Схлопываем пустые строки между вызовами функций
+        .replace(/(\(\);\r?\n)\s*\r?\n\s*(\b\w+\(\);)/gi, "$1$2")
+        // Оставляем ровно по одной пустой строке перед заголовками разделов
+        .replace(
+          /([^\n])\n*(\/\/ .*?ИМПОРТЫ ДИНАМИЧЕСКИХ JS\/TS МОДУЛЕЙ)/i,
+          "$1\n\n$2",
+        )
+        .replace(/([^\n])\n*(\/\/ Интерактивные модули логики)/i, "$1\n\n$2")
+    );
+  });
+  console.log("📝 Компонент успешно добавлен в app.ts по своим блокам");
+};
+
+/** Инъекция @use импорта в style.scss */
+const updateStyleScss = (filePath, blockName) => {
+  updateFileContent(filePath, (content) => {
+    const lines = content.split(/\r?\n/);
+    const scssImport = `@use "../components/${blockName}/${blockName}";`;
+
+    // Вставляем компонент строго перед заголовком функциональных модулей
+    const modulesIndex = lines.findIndex((line) =>
+      line.includes("ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ"),
+    );
+    if (modulesIndex !== -1) {
+      lines.splice(modulesIndex, 0, scssImport);
+    } else {
+      const zeroIndex = lines.findIndex((line) => line.includes("base/zero"));
+      lines.splice(zeroIndex !== -1 ? zeroIndex + 1 : 0, 0, scssImport);
+    }
+
+    // Чистка отступов
+    return lines
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/(\/\/ КОМПОНЕНТЫ СТРУКТУРЫ САЙТА\r?\n)\s*\r?\n/i, "$1")
+      .replace(/([^\n])\n*(\/\/ ФУНКЦИОНАЛЬНЫЕ JS\/TS МОДУЛИ)/i, "$1\n\n$2");
+  });
+  console.log("🎨 Стили добавлены в блок компонентов style.scss");
+};
+
+/** Добавление @@include в index.html */
+const updateIndexHtml = (filePath, blockName) => {
+  updateFileContent(filePath, (content) => {
+    const includeString = `@@include("components/${blockName}/${blockName}.html")\n`;
+    const scriptTag = '<script src="js/app.min.js"></script>';
+
+    if (content.includes(scriptTag)) {
+      return content.replace(scriptTag, `${includeString}${scriptTag}`);
+    }
+    return content.replace("</body>", `${includeString}</body>`);
+  });
+};
+
+// ==========================================
+// ОСНОВНОЙ ТАСК GULP
+// ==========================================
 
 export const create = (done) => {
   const blockName = process.argv
@@ -17,115 +129,43 @@ export const create = (done) => {
   }
 
   const camelName = toCamelCase(blockName);
-  const dirPath = `${config.structure.components}/${blockName}`;
+  const dirPath = path.join(config.structure.components, blockName);
 
-  const mainJsPath = `${config.srcFolder}/js/app.ts`;
-  const mainScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
-  const indexHtmlPath = `${config.srcFolder}/index.html`;
+  const mainJsPath = path.join(config.srcFolder, "js", "app.ts");
+  const mainScssPath = path.join(
+    config.srcFolder,
+    config.preprocessor,
+    `style.${config.preprocessor}`,
+  );
+  const indexHtmlPath = path.join(config.srcFolder, "index.html");
 
   if (fs.existsSync(dirPath)) {
     console.log(`\n⚠️ Блок "${blockName}" уже существует!\n`);
     return done();
   }
 
+  // Создание структуры директорий компонента
   fs.mkdirSync(dirPath, { recursive: true });
-  fs.mkdirSync(`${dirPath}/img`, { recursive: true });
+  fs.mkdirSync(path.join(dirPath, "img"), { recursive: true });
 
-  // 1. Определение семантического тега через switch
-  let tag;
-  switch (blockName) {
-    case "header":
-      tag = "header"; // Шапка сайта (логотип, меню)
-      break;
-    case "footer":
-      tag = "footer"; // Подвал сайта (контакты, копирайт)
-      break;
-    case "main":
-      tag = "main"; // Основное содержимое страницы (уникальное для каждой страницы)
-      break;
-    case "nav":
-      tag = "nav"; // Навигационные блоки (основное меню, хлебные крошки)
-      break;
-    case "aside":
-      tag = "aside"; // Побочный контент (сайдбар, боковая панель, реклама)
-      break;
-    case "article":
-      tag = "article"; // Независимый контент (пост в блоге, новость, карточка товара)
-      break;
-    default:
-      tag = "section"; // Тематический раздел страницы (преимущества, услуги, контакты)
-  }
+  // Создание базовых шаблонов файлов компонента
+  const tag = getSemanticTag(blockName);
+  const htmlTemplate = `<${tag} class="${blockName}">\n\t<div class="${blockName}__container container">\n\t\t\n\t</div>\n</${tag}>`;
+  const scssTemplate = `.${blockName} {\n\t\n}`;
+  const tsTemplate = `export const ${camelName} = () => {\n\tconsole.log("Блок ${blockName} (TS) инициализирован");\n};\n`;
 
-  // 2. Создаем HTML файл с правильной вложенностью
+  fs.writeFileSync(path.join(dirPath, `${blockName}.html`), htmlTemplate);
   fs.writeFileSync(
-    `${dirPath}/${blockName}.html`,
-    `<${tag} class="${blockName}">\n\t<div class="${blockName}__container container">\n\t\t\n\t</div>\n</${tag}>`,
+    path.join(dirPath, `${blockName}.${config.preprocessor}`),
+    scssTemplate,
   );
+  fs.writeFileSync(path.join(dirPath, `${blockName}.ts`), tsTemplate);
 
-  // 3. Создаем стили (SCSS)
-  fs.writeFileSync(
-    `${dirPath}/${blockName}.${config.preprocessor}`,
-    `.${blockName} {\n\t\n}`,
-  );
-
-  // 4. Создаем .ts файл
-  fs.writeFileSync(
-    `${dirPath}/${blockName}.ts`,
-    `export const ${camelName} = () => {\n\tconsole.log("Блок ${blockName} (TS) инициализирован");\n};\n`,
-  );
-
-  // 5. Добавляем импорт в app.ts через алиас @comp и вызов функции
-  if (fs.existsSync(mainJsPath)) {
-    const jsImport = `import { ${camelName} } from "@comp/${blockName}/${blockName}";\n`;
-    const jsCall = `${camelName}();\n`;
-    fs.appendFileSync(mainJsPath, `\n${jsImport}${jsCall}`);
-  }
-
-  // 6. Умное добавление импорта стилей
-  if (fs.existsSync(mainScssPath)) {
-    let scssContent = fs.readFileSync(mainScssPath, "utf8");
-    const scssImport = `@use "../components/${blockName}/${blockName}";`;
-    const zeroImport = '@use "base/zero";';
-
-    // Проверяем: есть ли после zero пустая строка?
-    // Регулярка ищет zero + любое количество переносов и пробелов
-    const zeroWithSpaceReg = /@use\s+["']base\/zero["'];\s*\n*/;
-
-    if (scssContent.includes(zeroImport)) {
-      // Вставляем zero, затем ДВА переноса (создаем ту самую пустую строку),
-      // затем новый импорт
-      scssContent = scssContent.replace(
-        zeroWithSpaceReg,
-        `${zeroImport}\n\n${scssImport}\n`,
-      );
-    } else {
-      scssContent = scssImport + "\n" + scssContent;
-    }
-
-    // Схлопываем лишние дыры (больше 2-х переносов в 2)
-    scssContent = scssContent.replace(/\n{3,}/g, "\n\n");
-
-    fs.writeFileSync(mainScssPath, scssContent.trim() + "\n");
-    console.log("🎨 Стили добавлены с учетом пустой строки после zero");
-  }
-
-  // 7. Добавляем инклюд в index.html перед скриптом
-  if (fs.existsSync(indexHtmlPath)) {
-    let htmlContent = fs.readFileSync(indexHtmlPath, "utf8");
-    const includeString = `@@include("components/${blockName}/${blockName}.html")\n`;
-    const scriptTag = '<script src="js/app.min.js"></script>';
-
-    if (htmlContent.includes(scriptTag)) {
-      htmlContent = htmlContent.replace(
-        scriptTag,
-        `${includeString}${scriptTag}`,
-      );
-    } else {
-      htmlContent = htmlContent.replace("</body>", `${includeString}</body>`);
-    }
-    fs.writeFileSync(indexHtmlPath, htmlContent);
-  }
+  // Инъекция созданного компонента в точки входа проекта
+  updateAppTs(mainJsPath, blockName, camelName);
+  updateStyleScss(mainScssPath, blockName);
+  updateIndexHtml(indexHtmlPath, blockName);
 
   console.log(`\n✅ Блок "${blockName}" (TS: ${camelName}) успешно создан!\n`);
   done();
-};;;;
+};

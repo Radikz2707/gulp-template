@@ -1,7 +1,12 @@
 import fs from "fs";
+import path from "path";
 import { config } from "./gulp.config.js";
 
-const protectedNames = [
+// ==========================================
+// КОНСТАНТЫ И ЗАЩИЩЕННЫЕ ДИРЕКТОРИИ
+// ==========================================
+
+const PROTECTED_NAMES = [
   "js",
   "scss",
   "html",
@@ -13,12 +18,83 @@ const protectedNames = [
   "dist",
 ];
 
-// Функция для превращения блока-имени в блокИмя (для поиска вызова функции в TS)
-const toCamelCase = (str) => {
-  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+// ==========================================
+// ХЕЛПЕРЫ И УТИЛИТЫ
+// ==========================================
+
+/** Конвертация строки из kebab-case в camelCase */
+const toCamelCase = (str) =>
+  str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+
+/** Безопасная запись обновленного контента в файл */
+const updateFileContent = (filePath, modifyCallback) => {
+  if (!fs.existsSync(filePath)) return;
+  const content = fs.readFileSync(filePath, "utf-8");
+  const updatedContent = modifyCallback(content);
+  fs.writeFileSync(filePath, updatedContent.trimEnd() + "\n");
 };
 
+// ==========================================
+// ЛОГИКА ОЧИСТКИ ФАЙЛОВ
+// ==========================================
+
+/** Чистка импортов и вызовов функций в app.ts */
+const cleanAppTs = (filePath, blockName, camelName) => {
+  updateFileContent(filePath, (content) => {
+    const lines = content.split(/\r?\n/);
+
+    const filteredLines = lines.filter((line) => {
+      const trimmed = line.trim();
+      const isTargetImport =
+        trimmed.startsWith("import ") && trimmed.includes(`/${blockName}/`);
+      const isTargetCall = trimmed === `${camelName}();`;
+      return !isTargetImport && !isTargetCall;
+    });
+
+    return filteredLines.join("\n").replace(/\n{3,}/g, "\n\n");
+  });
+  console.log("✂️ Импорты и вызовы TS удалены.");
+};
+
+/** Чистка @use импортов стилей в style.scss */
+const cleanStyleScss = (filePath, blockName) => {
+  updateFileContent(filePath, (content) => {
+    const lines = content.split(/\r?\n/);
+
+    const filteredLines = lines.filter((line) => {
+      const trimmed = line.trim();
+      return (
+        !trimmed.includes(`/${blockName}/`) &&
+        !trimmed.includes(`/${blockName}"`)
+      );
+    });
+
+    return filteredLines
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/(@use\s+.*?;)\n*(?![^]*@use)/i, "$1\n\n");
+  });
+  console.log(`✂️ Стили удалены из style.${config.preprocessor}`);
+};
+
+/** Чистка инклудов в index.html */
+const cleanIndexHtml = (filePath, blockName) => {
+  updateFileContent(filePath, (content) => {
+    const htmlIncludeReg = new RegExp(
+      `@@include\\(['"].*?${blockName}/${blockName}.html['"]\\)\\n?`,
+      "g",
+    );
+    return content.replace(htmlIncludeReg, "").replace(/\n{3,}/g, "\n\n");
+  });
+  console.log("✂️ Инклуд удален из HTML.");
+};
+
+// ==========================================
+// ОСНОВНОЙ ТАСК GULP
+// ==========================================
+
 export const remove = (done) => {
+  // Получаем имя удаляемого компонента/модуля из CLI
   const blockName = process.argv
     .find((arg) => arg.startsWith("--"))
     ?.replace("--", "");
@@ -28,25 +104,31 @@ export const remove = (done) => {
     return done();
   }
 
-  if (protectedNames.includes(blockName.toLowerCase())) {
+  // Проверка на удаление важных системных директорий
+  if (PROTECTED_NAMES.includes(blockName.toLowerCase())) {
     console.log(
       `\n❌ Ошибка: Удаление системной папки "${blockName}" запрещено!\n`,
     );
     return done();
   }
 
+  const camelName = toCamelCase(blockName);
+
   const possibleDirs = [
-    `${config.structure.components}/${blockName}`,
-    `${config.structure.modules}/${blockName}`,
-    `${config.structure.plugins}/${blockName}`,
+    path.join(config.structure.components, blockName),
+    path.join(config.structure.modules, blockName),
+    path.join(config.structure.plugins, blockName),
   ];
 
-  // ИЗМЕНЕНО: теперь ищем app.ts
-  const mainJsPath = `${config.srcFolder}/js/app.ts`;
-  const mainScssPath = `${config.srcFolder}/${config.preprocessor}/style.${config.preprocessor}`;
-  const indexHtmlPath = `${config.srcFolder}/index.html`;
+  const mainJsPath = path.join(config.srcFolder, "js", "app.ts");
+  const mainScssPath = path.join(
+    config.srcFolder,
+    config.preprocessor,
+    `style.${config.preprocessor}`,
+  );
+  const indexHtmlPath = path.join(config.srcFolder, "index.html");
 
-  // 1. Удаление физической папки
+  // Физическое удаление папок из проекта
   let dirDeleted = false;
   possibleDirs.forEach((dir) => {
     if (fs.existsSync(dir)) {
@@ -60,57 +142,10 @@ export const remove = (done) => {
     console.log(`⚠️ Папка для "${blockName}" не найдена.`);
   }
 
-  // 2. Чистка TS (Обновленные регулярные выражения для алиасов)
-  if (fs.existsSync(mainJsPath)) {
-    let jsContent = fs.readFileSync(mainJsPath, "utf8");
-    const camelName = toCamelCase(blockName);
-
-    // Регулярка ищет импорты через @, @comp или ../ (без учета расширения .js/.ts)
-    const jsImportReg = new RegExp(
-      `import\\s+{[^}]*${camelName}[^}]*}\\s+from\\s+['"](@|@comp|\\.\\.\\/|\\.\\/).*?${blockName}\\/?${blockName}?['"];?\\n?`,
-      "g",
-    );
-    const jsCallReg = new RegExp(`\\b${camelName}\\(\\);?\\n?`, "g");
-
-    jsContent = jsContent
-      .replace(jsImportReg, "")
-      .replace(jsCallReg, "")
-      .replace(/\n{3,}/g, "\n\n"); // Убираем пустоты в коде
-    fs.writeFileSync(mainJsPath, jsContent.trim() + "\n"); // trim() и перевод строки в конце
-    console.log("✂️ Импорты и вызовы TS удалены.");
-  }
-
-  // 3. Чистка SCSS
-  if (fs.existsSync(mainScssPath)) {
-    let scssContent = fs.readFileSync(mainScssPath, "utf8");
-    const scssImportReg = new RegExp(
-      `@use\\s+['"].*?${blockName}['"](\\s+as\\s+\\w+)?\\s*;?\\n?`,
-      "g",
-    );
-
-    scssContent = scssContent
-      .replace(scssImportReg, "")
-      .replace(/\n{3,}/g, "\n\n"); // Убираем пустоты в стилях
-    fs.writeFileSync(mainScssPath, scssContent.trim() + "\n");
-    console.log(`✂️ Стили удалены из style.${config.preprocessor}`);
-  }
-
-  // 4. Чистка HTML
-  if (fs.existsSync(indexHtmlPath)) {
-    let htmlContent = fs.readFileSync(indexHtmlPath, "utf8");
-    const htmlIncludeReg = new RegExp(
-      `@@include\\(['"].*?${blockName}/${blockName}.html['"]\\)\\n?`,
-      "g",
-    );
-
-    htmlContent = htmlContent
-      .replace(htmlIncludeReg, "")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-    // Добавляем + "\n", чтобы в конце файла был один аккуратный перенос
-    fs.writeFileSync(indexHtmlPath, htmlContent + "\n");
-    console.log("✂️ Инклуд удален из HTML.");
-  }
+  // Очистка точек входа и подключений
+  cleanAppTs(mainJsPath, blockName, camelName);
+  cleanStyleScss(mainScssPath, blockName);
+  cleanIndexHtml(indexHtmlPath, blockName);
 
   console.log(`\n✅ "${blockName}" успешно удален из проекта.\n`);
   done();

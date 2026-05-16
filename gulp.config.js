@@ -1,26 +1,36 @@
+import path from "path";
+
+// ==========================================
+// БАЗОВЫЕ НАСТРОЙКИ НАПРАВЛЕНИЙ
+// ==========================================
 const preprocessor = "scss";
-const srcFolder = "src"; // Исходники
-const buildFolder = "dist"; // Готовая сборка
+const srcFolder = "src"; // Папка с исходными файлами
+const buildFolder = "dist"; // Папка готовой сборки проекта
 
 export const config = {
   preprocessor,
   srcFolder,
   buildFolder,
 
-  // Пути для конструктора (создание/удаление)
+  // ==========================================
+  // СТРУКТУРА ПРОЕКТА ДЛЯ АВТОМАТИЗАЦИИ
+  // ==========================================
   structure: {
-    components: `${srcFolder}/components`,
-    modules: `${srcFolder}/js/modules`,
-    lessons: `${srcFolder}/js/modules/lessons`,
-    plugins: `${srcFolder}/js/plugins`,
+    components: path.join(srcFolder, "components"),
+    modules: path.join(srcFolder, "js", "modules"),
+    lessons: path.join(srcFolder, "js", "modules", "lessons"),
+    plugins: path.join(srcFolder, "js", "plugins"),
   },
 
   // Корень для JS алиасов (используется в webpack и jsconfig)
-  aliasPath: `${srcFolder}/js`,
+  aliasPath: path.join(srcFolder, "js"),
 
+  // ==========================================
+  // ПУТИ К ФАЙЛАМ ДЛЯ СБОРЩИКА GULP
+  // ==========================================
   paths: {
     styles: {
-      src: `${srcFolder}/${preprocessor}/style.{sass,scss,less}`,
+      src: `${srcFolder}/${preprocessor}/style.{sass,scss,less}`, // Оставляем glob-паттерн для Gulp
       dest: `${buildFolder}/css/`,
       output: "app.min.css",
     },
@@ -40,6 +50,9 @@ export const config = {
     },
   },
 
+  // ==========================================
+  // НАСТРОЙКИ ПЛАГИНОВ И ОПТИМИЗАЦИИ
+  // ==========================================
   settings: {
     webpQuality: 70,
     imagemin: {
