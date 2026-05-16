@@ -11,7 +11,8 @@ const PROTECTED_NAMES = [
   "components",
   "modules",
   "src",
-  "dist",
+   "dist",
+  "plugins"
 ];
 
 const toCamelCase = (str) =>
