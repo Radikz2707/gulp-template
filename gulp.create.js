@@ -2,15 +2,9 @@ import fs from "fs";
 import path from "path";
 import { config } from "./gulp.config.js";
 
-// ==========================================
-// ХЕЛПЕРЫ И УТИЛИТЫ
-// ==========================================
-
-/** Конвертация строки из kebab-case в camelCase */
 const toCamelCase = (str) =>
   str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 
-/** Безопасная запись обновленного контента в файл */
 const updateFileContent = (filePath, modifyCallback) => {
   if (!fs.existsSync(filePath)) return;
   const content = fs.readFileSync(filePath, "utf-8");
@@ -18,24 +12,17 @@ const updateFileContent = (filePath, modifyCallback) => {
   fs.writeFileSync(filePath, updatedContent.trimEnd() + "\n");
 };
 
-/** Определение HTML тега на основе имени компонента */
 const getSemanticTag = (blockName) => {
   const tags = ["header", "footer", "main", "nav", "aside", "article"];
   return tags.includes(blockName) ? blockName : "section";
 };
 
-// ==========================================
-// ЛОГИКА СБОРКИ ФАЙЛОВ
-// ==========================================
-
-/** Инъекция импорта и вызова функции в app.ts */
 const updateAppTs = (filePath, blockName, camelName) => {
   updateFileContent(filePath, (content) => {
     const lines = content.split(/\r?\n/);
     const importLine = `import { ${camelName} } from "@comp/${blockName}/${blockName}";`;
     const callLine = `${camelName}();`;
 
-    // Вставка импорта перед заголовком динамических модулей
     const nextBlockIndex = lines.findIndex((line) =>
       line.includes("ИМПОРТЫ ДИНАМИЧЕСКИХ JS/TS МОДУЛЕЙ"),
     );
@@ -45,7 +32,6 @@ const updateAppTs = (filePath, blockName, camelName) => {
       lines.unshift(importLine);
     }
 
-    // Вставка вызова функции перед разделом интерактивной логики
     const interactiveIndex = lines.findIndex((line) =>
       line.includes("Интерактивные модули логики"),
     );
@@ -55,32 +41,24 @@ const updateAppTs = (filePath, blockName, camelName) => {
       lines.push(callLine);
     }
 
-    // Чистка и форматирование кода
-    return (
-      lines
-        .join("\n")
-        // Убираем лишние пустые строки внутри списков импортов
-        .replace(/(import\s+.*?;)\n\s*\n\s*(import\s+.*?;)/gi, "$1\n$2")
-        // Схлопываем пустые строки между вызовами функций
-        .replace(/(\(\);\r?\n)\s*\r?\n\s*(\b\w+\(\);)/gi, "$1$2")
-        // Оставляем ровно по одной пустой строке перед заголовками разделов
-        .replace(
-          /([^\n])\n*(\/\/ .*?ИМПОРТЫ ДИНАМИЧЕСКИХ JS\/TS МОДУЛЕЙ)/i,
-          "$1\n\n$2",
-        )
-        .replace(/([^\n])\n*(\/\/ Интерактивные модули логики)/i, "$1\n\n$2")
-    );
+    return lines
+      .join("\n")
+      .replace(/(import\s+.*?;)\n\s*\n\s*(import\s+.*?;)/gi, "$1\n$2")
+      .replace(/(\(\);\r?\n)\s*\r?\n\s*(\b\w+\(\);)/gi, "$1$2")
+      .replace(
+        /([^\n])\n*(\/\/ .*?ИМПОРТЫ ДИНАМИЧЕСКИХ JS\/TS МОДУЛЕЙ)/i,
+        "$1\n\n$2",
+      )
+      .replace(/([^\n])\n*(\/\/ Интерактивные модули логики)/i, "$1\n\n$2");
   });
-  console.log("📝 Компонент успешно добавлен в app.ts по своим блокам");
+  console.log("📝 Компонент успешно добавлен в app.ts по своим blocks");
 };
 
-/** Инъекция @use импорта в style.scss */
 const updateStyleScss = (filePath, blockName) => {
   updateFileContent(filePath, (content) => {
     const lines = content.split(/\r?\n/);
     const scssImport = `@use "../components/${blockName}/${blockName}";`;
 
-    // Вставляем компонент строго перед заголовком функциональных модулей
     const modulesIndex = lines.findIndex((line) =>
       line.includes("ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ"),
     );
@@ -91,7 +69,6 @@ const updateStyleScss = (filePath, blockName) => {
       lines.splice(zeroIndex !== -1 ? zeroIndex + 1 : 0, 0, scssImport);
     }
 
-    // Чистка отступов
     return lines
       .join("\n")
       .replace(/\n{3,}/g, "\n\n")
@@ -101,7 +78,6 @@ const updateStyleScss = (filePath, blockName) => {
   console.log("🎨 Стили добавлены в блок компонентов style.scss");
 };
 
-/** Добавление @@include в index.html */
 const updateIndexHtml = (filePath, blockName) => {
   updateFileContent(filePath, (content) => {
     const includeString = `@@include("components/${blockName}/${blockName}.html")\n`;
@@ -113,10 +89,6 @@ const updateIndexHtml = (filePath, blockName) => {
     return content.replace("</body>", `${includeString}</body>`);
   });
 };
-
-// ==========================================
-// ОСНОВНОЙ ТАСК GULP
-// ==========================================
 
 export const create = (done) => {
   const blockName = process.argv
@@ -144,15 +116,13 @@ export const create = (done) => {
     return done();
   }
 
-  // Создание структуры директорий компонента
   fs.mkdirSync(dirPath, { recursive: true });
   fs.mkdirSync(path.join(dirPath, "img"), { recursive: true });
 
-  // Создание базовых шаблонов файлов компонента
   const tag = getSemanticTag(blockName);
   const htmlTemplate = `<${tag} class="${blockName}">\n\t<div class="${blockName}__container container">\n\t\t\n\t</div>\n</${tag}>`;
   const scssTemplate = `.${blockName} {\n\t\n}`;
-  const tsTemplate = `export const ${camelName} = () => {\n\tconsole.log("Блок ${blockName} (TS) инициализирован");\n};\n`;
+  const tsTemplate = `export const ${camelName} = () => {\n  console.log("Блок ${blockName} (TS) инициализирован");\n};\n`;
 
   fs.writeFileSync(path.join(dirPath, `${blockName}.html`), htmlTemplate);
   fs.writeFileSync(
@@ -161,7 +131,6 @@ export const create = (done) => {
   );
   fs.writeFileSync(path.join(dirPath, `${blockName}.ts`), tsTemplate);
 
-  // Инъекция созданного компонента в точки входа проекта
   updateAppTs(mainJsPath, blockName, camelName);
   updateStyleScss(mainScssPath, blockName);
   updateIndexHtml(indexHtmlPath, blockName);

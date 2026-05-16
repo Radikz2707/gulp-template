@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import { config } from "./gulp.config.js";
 
 export function createStructure(done) {
@@ -6,7 +7,6 @@ export function createStructure(done) {
   const preprocessor = config.preprocessor || "scss";
   const struct = config.structure;
 
-  // 1. КОНТЕНТ ФАЙЛОВ
   const zeroContent = `/* Обнуление (Zero Styles) */
 * { padding: 0; margin: 0; border: 0; }
 *, *:before, *:after { -webkit-box-sizing: border-box; box-sizing: border-box; }
@@ -49,7 +49,6 @@ table { border-collapse: collapse; border-spacing: 0; }
 @use "../components/main/main";
 @use "../components/footer/footer";`;
 
-  // ИЗМЕНЕНО: Содержимое для app.ts (используем алиас @comp и TS синтаксис)
   const appJsContent = `import { header } from "@comp/header/header";
 import { main } from "@comp/main/main";
 import { footer } from "@comp/footer/footer";
@@ -60,18 +59,17 @@ footer();
 
 console.log("Gulp + TypeScript работает!");`;
 
-  // 2. СПИСОК ПАПОК
   const folders = [
     srcFolder,
-    `${srcFolder}/${preprocessor}/base`,
+    path.join(srcFolder, preprocessor, "base"),
     struct.components,
     struct.modules,
     struct.plugins,
-    `${srcFolder}/images/src`,
-    `${srcFolder}/fonts/src`,
-    `${struct.components}/header`,
-    `${struct.components}/main`,
-    `${struct.components}/footer`,
+    path.join(srcFolder, "images", "src"),
+    path.join(srcFolder, "fonts", "src"),
+    path.join(struct.components, "header"),
+    path.join(struct.components, "main"),
+    path.join(struct.components, "footer"),
   ];
 
   folders.forEach((dir) => {
@@ -80,61 +78,56 @@ console.log("Gulp + TypeScript работает!");`;
     }
   });
 
-  // 3. СПИСОК ФАЙЛОВ
   const files = [
-    { path: `${srcFolder}/index.html`, content: indexHTML },
-    // ИЗМЕНЕНО: Создаем app.ts
-    { path: `${srcFolder}/js/app.ts`, content: appJsContent },
+    { path: path.join(srcFolder, "index.html"), content: indexHTML },
+    { path: path.join(srcFolder, "js", "app.ts"), content: appJsContent },
     {
-      path: `${srcFolder}/${preprocessor}/style.${preprocessor}`,
+      path: path.join(srcFolder, preprocessor, `style.${preprocessor}`),
       content: styleSCSS,
     },
     {
-      path: `${srcFolder}/${preprocessor}/base/_zero.${preprocessor}`,
+      path: path.join(srcFolder, preprocessor, "base", `_zero.${preprocessor}`),
       content: zeroContent,
     },
 
-    // Header (ИЗМЕНЕНО на .ts)
     {
-      path: `${struct.components}/header/header.html`,
+      path: path.join(struct.components, "header", "header.html"),
       content: `<header class="header">\n  <div class="container">\n    <h1>Header Component</h1>\n  </div>\n</header>`,
     },
     {
-      path: `${struct.components}/header/header.${preprocessor}`,
+      path: path.join(struct.components, "header", `header.${preprocessor}`),
       content: ".header { padding: 20px; background: #f4f4f4; }",
     },
     {
-      path: `${struct.components}/header/header.ts`,
+      path: path.join(struct.components, "header", "header.ts"),
       content:
         "export const header = (): void => {\n  console.log('Header TS Loaded');\n};",
     },
 
-    // Main (ИЗМЕНЕНО на .ts)
     {
-      path: `${struct.components}/main/main.html`,
+      path: path.join(struct.components, "main", "main.html"),
       content: `<main class="main">\n  <div class="container">\n    <h2>Main Content</h2>\n  </div>\n</main>`,
     },
     {
-      path: `${struct.components}/main/main.${preprocessor}`,
+      path: path.join(struct.components, "main", `main.${preprocessor}`),
       content: ".main { flex: 1 1 auto; padding: 40px 0; }",
     },
     {
-      path: `${struct.components}/main/main.ts`,
+      path: path.join(struct.components, "main", "main.ts"),
       content:
         "export const main = (): void => {\n  console.log('Main TS Loaded');\n};",
     },
 
-    // Footer (ИЗМЕНЕНО на .ts)
     {
-      path: `${struct.components}/footer/footer.html`,
+      path: path.join(struct.components, "footer", "footer.html"),
       content: `<footer class="footer">\n  <div class="container">\n    <p>Footer Component</p>\n  </div>\n</footer>`,
     },
     {
-      path: `${struct.components}/footer/footer.${preprocessor}`,
+      path: path.join(struct.components, "footer", `footer.${preprocessor}`),
       content: ".footer { padding: 20px; background: #333; color: #fff; }",
     },
     {
-      path: `${struct.components}/footer/footer.ts`,
+      path: path.join(struct.components, "footer", "footer.ts"),
       content:
         "export const footer = (): void => {\n  console.log('Footer TS Loaded');\n};",
     },
