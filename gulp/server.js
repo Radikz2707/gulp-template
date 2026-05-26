@@ -8,6 +8,8 @@ import { styles } from "./styles.js";
 import { scripts } from "./scripts.js";
 import { imagesDev, createWebp, sprite } from "./images.js";
 import { fonts, fontsStyle } from "./fonts.js";
+// Импортируем наши функции линтинга
+import { lintCss, lintJs } from "./lint.js";
 
 const { watch, series } = gulp;
 export const bs = browserSync.create();
@@ -32,12 +34,30 @@ export function browsersync() {
 }
 
 export function startwatch() {
-  watch(
-    `${config.srcFolder}/**/*.${config.preprocessor}`,
+  // 1. СЛЕЖЕНИЕ ЗА СТИЛЯМИ (+ автолинтинг изменённого файла)
+  const styleWatcher = watch(
+    [`${config.srcFolder}/**/*.${config.preprocessor}`],
     { delay: 300 },
     series(styles),
   );
-  watch(`${config.srcFolder}/js/**/*.ts`, { delay: 300 }, series(scripts));
+  styleWatcher.on("change", (filePath) => {
+    // Вызывает lintCss только для одного изменённого файла
+    lintCss(() => {}, filePath);
+  });
+
+  // 2. СЛЕЖЕНИЕ ЗА СКРИПТАМИ (+ автолинтинг изменённого файла)
+  // Изменена маска, чтобы подхватывать TS/JS как в папке js, так и в components
+  const scriptWatcher = watch(
+    [`${config.srcFolder}/**/*.{js,ts}`],
+    { delay: 300 },
+    series(scripts),
+  );
+  scriptWatcher.on("change", (filePath) => {
+    // Вызывает lintJs только для одного изменённого файла
+    lintJs(() => {}, filePath);
+  });
+
+  // 3. ОСТАЛЬНЫЕ НАБЛЮДАТЕЛИ (БЕЗ ИЗМЕНЕНИЙ)
   watch(`${config.srcFolder}/**/*.html`, html);
   watch(config.paths.images.svg, sprite);
   watch(`${config.srcFolder}/fonts/src/**/*`, series(fonts, fontsStyle));

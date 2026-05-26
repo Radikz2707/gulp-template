@@ -44,4 +44,4 @@ export default series(
   parallel(browsersync, startwatch),
 );
 
-export { create, remove, module, init, help, cleandist };
+export { create, remove, module, init, help, cleandist, lintJs, lintCss };

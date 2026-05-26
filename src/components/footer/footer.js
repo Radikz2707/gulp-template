@@ -1,3 +1,3 @@
 export const footer = () => {
-  console.log('Footer JS Loaded');
+  console.log("Footer JS Loaded");
 };

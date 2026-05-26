@@ -1,3 +1,3 @@
 export const header = () => {
-  console.log('Header JS Loaded');
+  console.log("Header JS Loaded");
 };

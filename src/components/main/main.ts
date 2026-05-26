@@ -1,3 +1,3 @@
 export const main = () => {
-	console.log("Блок main (TS) инициализирован");
+   console.log("Блок main (TS) инициализирован");
 };
