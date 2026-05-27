@@ -3,7 +3,7 @@ import gulp from "gulp";
 import plumber from "gulp-plumber";
 import fileInclude from "gulp-file-include";
 import htmlhint from "gulp-htmlhint";
-import webphtml from "gulp-webp-html-nosvg";
+import imgToPicture from "gulp-html-img-to-picture"; // Импортируем правильный плагин
 import htmlBeautify from "gulp-html-beautify";
 
 import { onError, isProd, bs } from "./server.js";
@@ -18,7 +18,33 @@ export function html() {
       `!${config.srcFolder}/parts/**/*.html`,
     ]),
     plumber({ errorHandler: onError }),
-    fileInclude({ prefix: "@@", basepath: "@file", indent: false }),
+    fileInclude({ prefix: "@@", basepath: "@file" }),
+  ];
+
+  // В продакшене безопасно оборачиваем картинки в <picture>
+  if (isProd) {
+    pipeline.push(
+      imgToPicture({
+        imgFolder: config.buildFolder, // Указываем, куда сборщик смотрит на картинки
+      }),
+    );
+  }
+
+  // Сначала форматируем в идеал
+  pipeline.push(
+    htmlBeautify({
+      indent_size: 2,
+      indent_char: " ",
+      eol: "\n",
+      preserve_newlines: true,
+      max_preserve_newlines: 1,
+      indent_inner_html: true,
+      extra_liners: [],
+    }),
+  );
+
+  // Валидируем уже чистый отформатированный код
+  pipeline.push(
     htmlhint({
       "doctype-first": false,
       "tagname-lowercase": true,
@@ -33,24 +59,9 @@ export function html() {
       "spec-char-escape": true,
     }),
     htmlhint.reporter("htmlhint-stylish", { failReporter: false }),
-  ];
-
-  if (isProd) {
-    pipeline.push(webphtml());
-  }
-
-  pipeline.push(
-    htmlBeautify({
-      indent_size: 2,
-      indent_char: " ",
-      eol: "\n",
-      preserve_newlines: true,
-      max_preserve_newlines: 1,
-      indent_inner_html: true,
-      extra_liners: [],
-    }),
-    dest(config.buildFolder),
   );
+
+  pipeline.push(dest(config.buildFolder));
 
   return pipeline
     .reduce((stream, plugin) => stream.pipe(plugin))

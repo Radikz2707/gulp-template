@@ -30,12 +30,15 @@ export function styles() {
     plumber({ errorHandler: onError }),
   ];
 
+  // ИСПРАВЛЕНО: Карта инициализируется строго в самом начале потока
   if (!isProd) {
     pipeline.push(sourcemaps.init());
   }
 
+  // Базовые плагины трансформации
   pipeline.push(
-    sass({ silenceDeprecations: ["import"] }).on("error", sass.logError),
+    // ИСПРАВЛЕНО: убран .on('error'), так как за ошибки отвечает plumber
+    sass({ silenceDeprecations: ["import"] }),
     gcmq(),
     postcss([
       webpInCss,
@@ -44,7 +47,14 @@ export function styles() {
         grid: false,
       }),
     ]),
-    cleancss({ level: { 2: { mergeMedia: true } } }),
+  );
+
+  // ИСПРАВЛЕНО: Сжатие стилей выполняется исключительно для продакшена
+  if (isProd) {
+    pipeline.push(cleancss({ level: { 2: { mergeMedia: true } } }));
+  }
+
+  pipeline.push(
     rename({
       basename: path
         .basename(config.paths.styles.output, ".css")
@@ -53,11 +63,16 @@ export function styles() {
     }),
   );
 
+  // Фиксация карты кода для режима разработки
   if (!isProd) {
     pipeline.push(
       sourcemaps.write(".", {
         includeContent: false,
-        sourceRoot: "../../src/scss",
+        // Динамически собираем путь для точного маппинга
+        sourceRoot: path.relative(
+          config.paths.styles.dest,
+          path.join(config.srcFolder, config.preprocessor),
+        ),
       }),
     );
   }
@@ -78,7 +93,8 @@ export function cssPurge(done) {
           path.join(config.buildFolder, "**", "*.html"),
           path.join(config.buildFolder, "js", "**", "*.js"),
         ],
-        safelist: ["webp", "no-webp"],
+        // Добавлен класс container и стандартные классы кастомизации на всякий случай
+        safelist: ["webp", "no-webp", "container"],
       }),
     )
     .pipe(dest(config.paths.styles.dest))

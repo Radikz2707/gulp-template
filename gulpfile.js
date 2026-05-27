@@ -1,3 +1,4 @@
+import { config } from "./gulp.config.js";
 import gulp from "gulp";
 
 // Импорты инфраструктуры сервера
@@ -21,10 +22,11 @@ import { help } from "./gulp.help.js";
 
 const { parallel, series } = gulp;
 
+// ПОЛНЫЙ ЦИКЛ СБОРКИ ДЛЯ ПРОДАКШЕНА
 export const build = series(
   cleandist,
   parallel(lintCss, lintJs, series(fonts, fontsStyle)),
-  parallel(styles, scripts, images, createWebp, sprite, favs, html),
+  parallel(styles, scripts, images, createWebp, sprite, favs, html), // favs снова на своем законном месте
   buildcopy,
   cssPurge,
   zipFiles,
@@ -37,9 +39,11 @@ export const build = series(
   },
 );
 
+// СТАРТОВЫЙ ТАСК ДЛЯ РАЗРАБОТКИ
 export default series(
   help,
-  parallel(styles, scripts, html, series(fonts, fontsStyle)),
+  series(fonts, fontsStyle),
+  parallel(styles, scripts, html, imagesDev, createWebp, sprite),
   buildcopy,
   parallel(browsersync, startwatch),
 );

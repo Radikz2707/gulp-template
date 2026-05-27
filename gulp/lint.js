@@ -18,16 +18,23 @@ const handleLintResult = (err, stdout, stderr, done) => {
   done();
 };
 
+// Опции для сохранения цветного вывода в терминале exec
+const execOptions = {
+  env: { ...process.env, FORCE_COLOR: "1" },
+};
+
 // ==========================================
 // ПРОВЕРКА И АВТОИСПРАВЛЕНИЕ СТИЛЕЙ (STYLELINT)
 // ==========================================
 export const lintCss = (done, filePath = null) => {
+  // ИСПРАВЛЕНО: Двойные кавычки внутри косых для стабильной работы glob в Windows/Linux
   const targetPath = filePath
-    ? filePath
-    : `${config.srcFolder}/**/*.${config.preprocessor}`;
+    ? `"${filePath}"`
+    : `"${config.srcFolder}/**/*.${config.preprocessor}"`;
 
   exec(
-    `npx stylelint "${targetPath}" --fix --allow-empty-input --custom-formatter=stylelint-formatter-pretty`,
+    `npx stylelint ${targetPath} --fix --allow-empty-input --custom-formatter=stylelint-formatter-pretty`,
+    execOptions,
     (err, stdout, stderr) => handleLintResult(err, stdout, stderr, done),
   );
 };
@@ -36,9 +43,14 @@ export const lintCss = (done, filePath = null) => {
 // ПРОВЕРКА И АВТОИСПРАВЛЕНИЕ СКРИПТОВ (ESLINT)
 // ==========================================
 export const lintJs = (done, filePath = null) => {
-  const targetPath = filePath ? filePath : `${config.srcFolder}/**/*.{js,ts}`;
+  // ИСПРАВЛЕНО: Двойные кавычки спасают раскрытие маски {js,ts} в cmd.exe
+  const targetPath = filePath 
+    ? `"${filePath}"` 
+    : `"${config.srcFolder}/**/*.{js,ts}"`;
 
-  exec(`npx eslint "${targetPath}" --fix`, (err, stdout, stderr) =>
-    handleLintResult(err, stdout, stderr, done),
+  exec(
+    `npx eslint ${targetPath} --fix`, 
+    execOptions,
+    (err, stdout, stderr) => handleLintResult(err, stdout, stderr, done),
   );
 };

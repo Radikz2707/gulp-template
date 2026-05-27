@@ -59,6 +59,6 @@ export const config = {
       jpeg: 75,
       png: 5,
     },
-    autoprefixer: ["last 10 versions"],
+    autoprefixer: ["> 0.5%", "last 2 versions", "not dead"],
   },
 };

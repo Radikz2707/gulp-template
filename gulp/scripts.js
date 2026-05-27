@@ -17,70 +17,76 @@ const { src, dest } = gulp;
 export function scripts(done) {
   let isFirstBuild = true;
 
-  const jsRules = {
-    test: /\.m?js$/,
-    exclude: /node_modules/,
+  const babelLoader = {
+    loader: "babel-loader",
+    options: { presets: ["@babel/preset-env"] },
   };
 
-  if (isProd) {
-    jsRules.use = {
-      loader: "babel-loader",
-      options: { presets: ["@babel/preset-env"] },
-    };
-  }
+  const webpackConfig = {
+    mode: isProd ? "production" : "development",
+    watch: !isProd,
+    cache: isProd ? false : { type: "filesystem" },
+    performance: { hints: false },
+    entry: {
+      app: path.resolve(config.paths.scripts.src),
+    },
+    output: {
+      filename: config.paths.scripts.output,
+      chunkFilename: "js/chunks/chunk-[name].js", // ДОБАВЛЕНО: Папка и шаблон имен для ленивых модулей
+    },
+    resolve: {
+      alias: {
+        "@": path.resolve(config.aliasPath),
+        "@comp": path.resolve(config.structure.components),
+        "@modules": path.resolve(config.structure.modules),
+      },
+      extensions: [".ts", ".js", ".json"],
+    },
+    module: {
+      rules: [
+        {
+          test: /\.ts$/,
+          exclude: /node_modules/,
+          use: [
+            ...(isProd ? [babelLoader] : []),
+            {
+              loader: "ts-loader",
+              options: { transpileOnly: !isProd },
+            },
+          ],
+        },
+        {
+          test: /\.m?js$/,
+          exclude: /node_modules/,
+          use: [babelLoader],
+        },
+      ],
+    },
+    optimization: {
+      minimize: isProd,
+      minimizer: [new TerserPlugin({ extractComments: false })],
+    },
+    devtool: isProd ? "source-map" : "eval-cheap-module-source-map",
+  };
 
-  return src(config.paths.scripts.src)
+  const stream = src(config.paths.scripts.src)
     .pipe(plumber({ errorHandler: onError }))
     .pipe(
-      webpackStream(
-        {
-          mode: isProd ? "production" : "development",
-          watch: !isProd,
-          cache: isProd ? false : { type: "filesystem" },
-          performance: { hints: false },
-          entry: { app: `./${config.paths.scripts.src}` },
-          output: { filename: config.paths.scripts.output },
-          resolve: {
-            alias: {
-              "@": path.resolve(config.aliasPath),
-              "@comp": path.resolve(config.structure.components),
-              "@modules": path.resolve(config.structure.modules),
-            },
-            extensions: [".ts", ".js", ".json"],
-          },
-          module: {
-            rules: [
-              {
-                test: /\.ts$/,
-                exclude: /node_modules/,
-                use: [
-                  { loader: "ts-loader", options: { transpileOnly: !isProd } },
-                ],
-              },
-              ...(isProd ? [jsRules] : []),
-            ],
-          },
-          optimization: {
-            minimize: isProd,
-            minimizer: [new TerserPlugin({ extractComments: false })],
-          },
-          devtool: isProd ? "source-map" : "eval-cheap-module-source-map",
-        },
-        webpack,
-        (err, stats) => {
-          if (err) return;
-          if (!isProd) {
-            if (isFirstBuild) {
-              isFirstBuild = false;
-              done();
-            }
-            bs.reload();
+      webpackStream(webpackConfig, webpack, (err, stats) => {
+        if (err) return;
+
+        if (!isProd) {
+          if (isFirstBuild) {
+            isFirstBuild = false;
+            done();
           }
-        },
-      ),
+          bs.reload();
+        }
+      }),
     )
-    .pipe(dest(config.paths.scripts.dest))
-    .on("end", () => {
-      if (isProd) done();
-    });
+    .pipe(dest(config.paths.scripts.dest));
+
+  if (isProd) {
+    return stream.on("end", done);
+  }
 }

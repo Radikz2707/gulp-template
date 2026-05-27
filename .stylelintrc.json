@@ -4,6 +4,11 @@
   "rules": {
     "order/properties-alphabetical-order": null,
     "block-no-empty": null,
+    "no-descending-specificity": null,
+    "selector-class-pattern": null,
+    "scss/at-rule-no-unknown": true,
+    "at-rule-no-unknown": null,
+    "scss/at-use-no-unnamespaced": null,
     "order/order": [
       "custom-properties",
       "dollar-variables",
@@ -13,12 +18,10 @@
     ],
     "order/properties-order": [
       {
-        "groupName": "Positioning",
         "emptyLineBefore": "always",
         "properties": ["position", "top", "right", "bottom", "left", "z-index"]
       },
       {
-        "groupName": "Display & Flow",
         "emptyLineBefore": "always",
         "properties": [
           "display",
@@ -64,7 +67,6 @@
         ]
       },
       {
-        "groupName": "Dimensions",
         "emptyLineBefore": "always",
         "properties": [
           "width",
@@ -77,7 +79,6 @@
         ]
       },
       {
-        "groupName": "Spacing",
         "emptyLineBefore": "always",
         "properties": [
           "margin",
@@ -93,7 +94,6 @@
         ]
       },
       {
-        "groupName": "Typography",
         "emptyLineBefore": "always",
         "properties": [
           "font-family",
@@ -114,7 +114,6 @@
         ]
       },
       {
-        "groupName": "Visual",
         "emptyLineBefore": "always",
         "properties": [
           "background",
@@ -140,7 +139,6 @@
         ]
       },
       {
-        "groupName": "Animation & Misc",
         "emptyLineBefore": "always",
         "properties": [
           "transition",
@@ -162,11 +160,6 @@
           "pointer-events"
         ]
       }
-    ],
-    "no-descending-specificity": null,
-    "selector-class-pattern": null,
-    "scss/at-rule-no-unknown": true,
-    "at-rule-no-unknown": null,
-    "scss/at-use-no-unnamespaced": null
+    ]
   }
 }

@@ -15,47 +15,32 @@ const updateFileContent = (filePath, modifyCallback) => {
 const updateAppTs = (filePath, name, camelName) => {
   updateFileContent(filePath, (content) => {
     const lines = content.split(/\r?\n/);
-    const importLine = `import { ${camelName} } from "@/modules/${name}/${name}";`;
-    const callLine = `${camelName}();`;
 
-    const separatorIndex = lines.findIndex((line) => line.includes("// ===="));
-    if (separatorIndex !== -1) {
-      lines.splice(separatorIndex, 0, importLine);
-    } else {
-      const lastImportIndex = lines.findLastIndex((line) =>
-        line.trim().startsWith("import "),
-      );
-      lines.splice(
-        lastImportIndex !== -1 ? lastImportIndex + 1 : 0,
-        0,
-        importLine,
-      );
-    }
-
-    const consoleLogIndex = lines.findIndex((line) =>
-      line.includes("console.log"),
-    );
-    if (consoleLogIndex !== -1) {
-      lines.splice(consoleLogIndex, 0, callLine);
-    } else {
-      lines.push(callLine);
-    }
-
-    return lines
-      .join("\n")
-      .replace(/(import\s+.*?;)\n\s*\n\s*(import\s+.*?;)/gi, "$1\n$2")
-      .replace(
-        /(\/\/ .*?ИМПОРТЫ ДИНАМИЧЕСКИХ JS\/TS МОДУЛЕЙ\r?\n)\s*\r?\n/i,
-        "$1",
-      )
-      .replace(/(\/\/ Интерактивные модули логики\r?\n)\s*\r?\n/i, "$1")
-      .replace(/(\(\);\r?\n)\s*\r?\n\s*(\b\w+\(\);)/gi, "$1$2")
-      .replace(/([^\n])\n*(\/\/ ====)/, "$1\n\n$2")
-      .replace(/(\(\);\r?\n)\s*(\s*console\.log)/i, "$1\n$2");
+    // ИСПРАВЛЕНО: Вместо статического импорта формируем блок динамического (ленивого) импорта
+    const lazyCallBlock = `
+// Ленивая загрузка модуля ${name}
+if (document.querySelector(".${name}")) {
+  import(/* webpackChunkName: "${name}" */ "@modules/${name}/${name}").then(({ ${camelName} }) => {
+    ${camelName}();
   });
+}`;
+
+    // Ищем маркер интерактивной логики
+    const interactiveIndex = lines.findIndex((line) =>
+      line.includes("Интерактивные модули логики"),
+    );
+    if (interactiveIndex !== -1) {
+      lines.splice(interactiveIndex + 1, 0, lazyCallBlock);
+    } else {
+      lines.push(lazyCallBlock);
+    }
+
+    return lines.join("\n");
+  });
+  console.log("📝 Ленивый модуль успешно добавлен в блоки app.ts");
 };
 
-const updateStyleScss = (filePath, dirPath, name, camelName) => {
+const updateStyleScss = (filePath, dirPath, name) => {
   updateFileContent(filePath, (content) => {
     const styleDir = path.dirname(filePath);
     let relativePath = path
@@ -64,28 +49,19 @@ const updateStyleScss = (filePath, dirPath, name, camelName) => {
     if (!relativePath.startsWith(".")) relativePath = `./${relativePath}`;
 
     const lines = content.split(/\r?\n/);
-    const newImport = `@use "${relativePath}" as ${camelName};`;
+    const newImport = `@use "${relativePath}";`;
 
-    const firstCodeIndex = lines.findIndex((line) => {
-      const trimmed = line.trim();
-      return (
-        trimmed !== "" &&
-        !trimmed.startsWith("@use") &&
-        !trimmed.startsWith("//")
-      );
-    });
+    const modulesIndex = lines.findIndex((line) =>
+      line.includes("ФУНКЦИОНАЛЬНЫЕ JS/TS МОДУЛИ"),
+    );
 
-    if (firstCodeIndex !== -1) {
-      lines.splice(firstCodeIndex, 0, newImport);
+    if (modulesIndex !== -1) {
+      lines.splice(modulesIndex + 1, 0, newImport);
     } else {
       lines.push(newImport);
     }
 
-    return lines
-      .join("\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .replace(/(\/\/ ФУНКЦИОНАЛЬНЫЕ JS\/TS МОДУЛИ\r?\n)\s*\r?\n/i, "$1")
-      .replace(/(@use\s+.*?;)\n*(?![^]*@use)/i, "$1\n\n");
+    return lines.join("\n").replace(/\n{3,}/g, "\n\n");
   });
   console.log("🎨 Стили добавлены в блок модулей style.scss");
 };
@@ -96,15 +72,13 @@ export const createModule = (done) => {
     ?.replace("--", "");
 
   if (!name) {
-    console.log(
-      "\n❌ Укажите имя модуля! Пример: gulp createModule --my-block\n",
-    );
+    console.log("\n❌ Укажите имя модуля! Пример: gulp module --my-slider\n");
     return done();
   }
 
   const camelName = toCamelCase(name);
   const dirPath = path.join(config.structure.modules, name);
-  const appJsPath = path.join(config.srcFolder, "js", "app.ts");
+  const appJsPath = config.paths.scripts.src;
   const styleScssPath = path.join(
     config.srcFolder,
     config.preprocessor,
@@ -122,11 +96,16 @@ export const createModule = (done) => {
   const scssTemplate = `.${name} {\n  \n}\n`;
 
   fs.writeFileSync(path.join(dirPath, `${name}.ts`), tsTemplate);
-  fs.writeFileSync(path.join(dirPath, `${name}.scss`), scssTemplate);
+  fs.writeFileSync(
+    path.join(dirPath, `${name}.${config.preprocessor}`),
+    scssTemplate,
+  );
 
   updateAppTs(appJsPath, name, camelName);
-  updateStyleScss(styleScssPath, dirPath, name, camelName);
+  updateStyleScss(styleScssPath, dirPath, name);
 
-  console.log(`\n✅ Модуль "${name}" (TS: ${camelName}) успешно создан!\n`);
+  console.log(
+    `\n✅ Модуль "${name}" (TS: ${camelName}) успешно создан в ленивом режиме!\n`,
+  );
   done();
 };

@@ -9,6 +9,7 @@ import { onError } from "./server.js";
 
 const { src, dest } = gulp;
 
+// Полная очистка папки сборки перед новым билдом
 export function cleandist(done) {
   if (fs.existsSync(config.buildFolder)) {
     fs.rmSync(config.buildFolder, { recursive: true, force: true });
@@ -16,11 +17,19 @@ export function cleandist(done) {
   done();
 }
 
+// Копирование статических ресурсов (например, уже готовых шрифтов)
 export function buildcopy(done) {
+  // 1. Проверяем исходную папку шрифтов в src
+  const srcFontsFolder = path.join(config.srcFolder, "fonts");
+  if (!fs.existsSync(srcFontsFolder)) return done();
+
+  // 2. ИСПРАВЛЕНО: Добавлена проверка папки назначения dist/fonts
+  // Если папка в dist еще не создана компилятором, просто выходим без ошибки
   if (!fs.existsSync(config.paths.fonts.dest)) return done();
 
+  // 3. Если папка есть и в ней есть файлы — копируем их
   return src(path.join(config.paths.fonts.dest, "**", "*"), {
-    base: config.srcFolder,
+    base: config.buildFolder,
     allowEmpty: true,
     encoding: false,
   })
@@ -28,6 +37,7 @@ export function buildcopy(done) {
     .pipe(dest(config.buildFolder));
 }
 
+// Архивирование готовой сборки проекта
 export function zipFiles() {
   const now = new Date();
   const year = now.getFullYear();
@@ -38,7 +48,7 @@ export function zipFiles() {
 
   const fileName = `dist_${year}-${month}-${day}_${hours}-${minutes}.zip`;
 
-  return src(path.join(config.buildFolder, "**", "*"))
+  return src(path.join(config.buildFolder, "**", "*"), { allowEmpty: true })
     .pipe(plumber({ errorHandler: onError }))
     .pipe(zip(fileName))
     .pipe(dest("archives/"))

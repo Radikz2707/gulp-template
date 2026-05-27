@@ -11,8 +11,8 @@ const PROTECTED_NAMES = [
   "components",
   "modules",
   "src",
-   "dist",
-  "plugins"
+  "dist",
+  "plugins",
 ];
 
 const toCamelCase = (str) =>
@@ -30,14 +30,22 @@ const cleanAppTs = (filePath, blockName, camelName) => {
     const lines = content.split(/\r?\n/);
     const filteredLines = lines.filter((line) => {
       const trimmed = line.trim();
+
+      // ИСПРАВЛЕНО: Более точная проверка импорта (ищет имя блока как изолированную часть пути в кавычках)
       const isTargetImport =
-        trimmed.startsWith("import ") && trimmed.includes(`/${blockName}/`);
-      const isTargetCall = trimmed === `${camelName}();`;
+        trimmed.startsWith("import ") &&
+        (trimmed.includes(`/${blockName}/`) ||
+          trimmed.includes(`/${blockName}"`) ||
+          trimmed.includes(`/${blockName}'`));
+
+      // ИСПРАВЛЕНО: Проверка вызова функции без привязки к лишним пробелам или табам по краям
+      const isTargetCall = trimmed.replace(/\s+/g, "") === `${camelName}();`;
+
       return !isTargetImport && !isTargetCall;
     });
     return filteredLines.join("\n").replace(/\n{3,}/g, "\n\n");
   });
-  console.log("✂️ Импорты и вызовы TS удалены.");
+  console.log("✂️ Импорты и вызовы TS успешно удалены.");
 };
 
 const cleanStyleScss = (filePath, blockName) => {
@@ -47,21 +55,20 @@ const cleanStyleScss = (filePath, blockName) => {
       const trimmed = line.trim();
       return (
         !trimmed.includes(`/${blockName}/`) &&
-        !trimmed.includes(`/${blockName}"`)
+        !trimmed.includes(`/${blockName}"`) &&
+        !trimmed.includes(`/${blockName}'`)
       );
     });
-    return filteredLines
-      .join("\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .replace(/(@use\s+.*?;)\n*(?![^]*@use)/i, "$1\n\n");
+    return filteredLines.join("\n").replace(/\n{3,}/g, "\n\n");
   });
   console.log(`✂️ Стили удалены из style.${config.preprocessor}`);
 };
 
 const cleanIndexHtml = (filePath, blockName) => {
   updateFileContent(filePath, (content) => {
+    // ИСПРАВЛЕНО: Регулярное выражение теперь корректно вырезает инклуд вместе с переносом строки, не оставляя пустых дыр
     const htmlIncludeReg = new RegExp(
-      `@@include\\(['"].*?${blockName}/${blockName}.html['"]\\)\\n?`,
+      `@@include\\(['"].*?${blockName}/${blockName}.html['"]\\)\\r?\\n?`,
       "g",
     );
     return content.replace(htmlIncludeReg, "").replace(/\n{3,}/g, "\n\n");
@@ -87,13 +94,19 @@ export const remove = (done) => {
   }
 
   const camelName = toCamelCase(blockName);
+
+  // Добавлен поиск как папок, так и возможных одиночных файлов модулей/плагинов
   const possibleDirs = [
     path.join(config.structure.components, blockName),
     path.join(config.structure.modules, blockName),
     path.join(config.structure.plugins, blockName),
   ];
+  const possibleFiles = [
+    path.join(config.structure.modules, `${blockName}.ts`),
+    path.join(config.structure.plugins, `${blockName}.ts`),
+  ];
 
-  const mainJsPath = path.join(config.srcFolder, "js", "app.ts");
+  const mainJsPath = config.paths.scripts.src; // ИСПРАВЛЕНО: Динамический путь из конфигурации
   const mainScssPath = path.join(
     config.srcFolder,
     config.preprocessor,
@@ -102,6 +115,8 @@ export const remove = (done) => {
   const indexHtmlPath = path.join(config.srcFolder, "index.html");
 
   let dirDeleted = false;
+
+  // Удаляем папки
   possibleDirs.forEach((dir) => {
     if (fs.existsSync(dir)) {
       fs.rmSync(dir, { recursive: true, force: true });
@@ -110,12 +125,24 @@ export const remove = (done) => {
     }
   });
 
-  if (!dirDeleted) console.log(`⚠️ Папка для "${blockName}" не найдена.`);
+  // Удаляем одиночные файлы (если модуль был создан без папки)
+  possibleFiles.forEach((file) => {
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+      console.log(`🗑️ Файл удален: ${file}`);
+      dirDeleted = true;
+    }
+  });
+
+  if (!dirDeleted)
+    console.log(`⚠️ Ресурсы для "${blockName}" не найдены на диске.`);
 
   cleanAppTs(mainJsPath, blockName, camelName);
   cleanStyleScss(mainScssPath, blockName);
   cleanIndexHtml(indexHtmlPath, blockName);
 
-  console.log(`\n✅ "${blockName}" успешно удален из проекта.\n`);
+  console.log(
+    `\n✅ "${blockName}" полностью вырезан из архитектуры проекта.\n`,
+  );
   done();
 };

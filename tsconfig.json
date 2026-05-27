@@ -1,25 +1,26 @@
 {
   "compilerOptions": {
-    "noEmit": false,
-    "outDir": "dist/js",
-    "rootDir": "src",
+    "noEmit": false, // ИСПРАВЛЕНО: возвращаем false, чтобы ts-loader мог отдавать код в Webpack
     "target": "ESNext",
     "module": "ESNext",
-    "lib": ["DOM", "ESNext"],
     "moduleResolution": "Bundler",
-    "ignoreDeprecations": "5.0",
-    "strict": true, // <--- ИЗМЕНЕНО: включи строгость для реальной пользы
-    "isolatedModules": true, // <--- ДОБАВЛЕНО: для корректной работы с Webpack
+    "ignoreDeprecations": "6.0",
+    "strict": true,
+    "isolatedModules": true,
     "sourceMap": true,
+    "allowJs": false,
+    "checkJs": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/js/*"],
       "@comp/*": ["./src/components/*"],
+      "@modules/*": ["./src/js/modules/*"],
       "@plugins/*": ["./src/js/plugins/*"]
-    },
-    "allowJs": true,
-    "forceConsistentCasingInFileNames": true
+    }
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "archives"]
 }
