@@ -2,10 +2,6 @@
 import { isWebp } from "@/modules/isWebp";
 
 // 2. ИМПОРТЫ СТАТИЧЕСКИХ КОМПОНЕНТОВ
-import { header } from "@comp/header/header";
-import { nav } from "@comp/nav/nav";
-import { main } from "@comp/main/main";
-import { footer } from "@comp/footer/footer";
 
 // 3. ИМПОРТЫ ДИНАМИЧЕСКИХ JS/TS МОДУЛЕЙ
 
@@ -17,10 +13,6 @@ import { footer } from "@comp/footer/footer";
 isWebp();
 
 // Компоненты структуры сайта
-header();
-nav();
-main();
-footer();
 
 // Интерактивные модули логики
 
