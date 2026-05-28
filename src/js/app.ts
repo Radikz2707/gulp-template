@@ -16,10 +16,4 @@ isWebp();
 
 // Интерактивные модули логики
 
-// Ленивая загрузка модуля lazy-gallery
-if (document.querySelector(".lazy-gallery")) {
-  import(/* webpackChunkName: "lazy-gallery" */ "@modules/lazy-gallery/lazy-gallery").then(({ lazyGallery }) => {
-  });
-}
-
 console.log("TypeScript успешно запущен!");
