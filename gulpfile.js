@@ -23,18 +23,16 @@ import { help } from "./gulp.help.js";
 const { parallel, series } = gulp;
 
 // ПОЛНЫЙ ЦИКЛ СБОРКИ ДЛЯ ПРОДАКШЕНА
-export const build = series(
+export const build = gulp.series(
   cleandist,
-  parallel(lintCss, lintJs, series(fonts, fontsStyle)),
-  parallel(styles, scripts, images, createWebp, sprite, favs, html), // favs снова на своем законном месте
-  buildcopy,
-  cssPurge,
-  zipFiles,
+  gulp.parallel(lintCss, lintJs, fonts, fontsStyle),
+  gulp.parallel(styles, scripts, images, createWebp, sprite, favs),
+  html, // 1. Сначала полностью собираем HTML (с вашими новыми <picture>)
+  buildcopy, // 2. Копируем остальные файлы
+  cssPurge, // 3. Чистим CSS на основе готового HTML (строго ПОСЛЕ html)
+  zipFiles, // 4. Архивируем результат (строго ПОСЛЕ очистки стилей)
   (done) => {
-    console.log(
-      "\x1b[32m%s\x1b[0m",
-      ">>> 🚀 Project successfully assembled and archived! <<<",
-    );
+    console.log(">>> 🚀 Project successfully assembled and archived! <<<");
     done();
   },
 );

@@ -14,22 +14,23 @@ import svgSprite from "gulp-svg-sprite";
 import favicons from "gulp-favicons";
 import newer from "gulp-newer";
 import gulpIf from "gulp-if";
-import { PassThrough } from "stream";
+import { execSync } from "child_process";
+import glob from "glob";
 
 import { onError, bs } from "./server.js";
 
 const { src, dest } = gulp;
 
+// Общий массив путей к исходным картинкам
+const imageSources = [
+  `${config.srcFolder}/images/src/**/*`,
+  `!${config.srcFolder}/images/src/favicon.png`,
+  `${config.srcFolder}/components/**/img/**/*.{jpg,jpeg,png,svg,webp,gif}`,
+];
+
 // 1. ПРОДАКШЕН СБОРКА КАРТИНОК
 export function images() {
-  return src(
-    [
-      `${config.srcFolder}/images/src/**/*`,
-      `!${config.srcFolder}/images/src/favicon.png`,
-      `${config.srcFolder}/components/**/img/**/*.{jpg,jpeg,png,svg,webp,gif}`,
-    ],
-    { encoding: false },
-  )
+  return src(imageSources, { encoding: false })
     .pipe(plumber({ errorHandler: onError }))
     .pipe(
       newer({
@@ -51,14 +52,7 @@ export function images() {
 
 // 2. ДЕВ СБОРКА КАРТИНОК
 export function imagesDev() {
-  return src(
-    [
-      `${config.srcFolder}/images/src/**/*`,
-      `!${config.srcFolder}/images/src/favicon.png`,
-      `${config.srcFolder}/components/**/img/**/*.{jpg,jpeg,png,svg,webp,gif}`,
-    ],
-    { encoding: false },
-  )
+  return src(imageSources, { encoding: false })
     .pipe(plumber({ errorHandler: onError }))
     .pipe(
       newer({
@@ -71,7 +65,7 @@ export function imagesDev() {
     .on("end", bs.reload);
 }
 
-// 3. КОНВЕРТАЦИЯ В WEBP
+// 3. СТАБИЛЬНАЯ КОНВЕРТАЦИЯ В WEBP С АВТОПОВОРОТОМ
 export function createWebp() {
   return src(
     [
@@ -82,6 +76,7 @@ export function createWebp() {
     { encoding: false },
   )
     .pipe(plumber({ errorHandler: onError }))
+    // Шаг 1: Сбрасываем кэш конкретно для этого шага
     .pipe(
       newer({
         dest: config.paths.images.dest,
@@ -89,6 +84,13 @@ export function createWebp() {
           path.basename(relative, path.extname(relative)) + ".webp",
       }),
     )
+    // Шаг 2: Вызываем ваш рабочий imagemin для физического разворота пикселей
+    .pipe(
+      imagemin([
+        mozjpeg({ progressive: true }), 
+      ]),
+    )
+    // Шаг 3: Теперь конвертируем уже ровную картинку в WebP
     .pipe(webp({ quality: config.settings.webpQuality }))
     .pipe(flatten())
     .pipe(dest(config.paths.images.dest))
@@ -124,21 +126,21 @@ export function sprite() {
     .on("end", bs.reload);
 }
 
-// 5. ГЕНЕРАЦИЯ ФАВИКОНОК (На 100% защищенная версия)
+// 5. ГЕНЕРАЦИЯ ФАВИКОНОК
 export function favs() {
-  const faviconPath = path.join(config.srcFolder, "images", "src", "favicon.png");
-  const hasFavicon = fs.existsSync(faviconPath) && fs.statSync(faviconPath).size > 0;
+  const faviconPath = path.join(
+    config.srcFolder,
+    "images",
+    "src",
+    "favicon.png",
+  );
+  const hasFavicon =
+    fs.existsSync(faviconPath) && fs.statSync(faviconPath).size > 0;
+  const targetPath = hasFavicon
+    ? faviconPath
+    : path.join(config.srcFolder, "images", "src", "noop.png");
 
-  const targetPath = hasFavicon ? faviconPath : path.join(config.srcFolder, "images", "src", "noop.png");
-
-  if (!hasFavicon) {
-    console.log("ℹ️ Favicon.png пустой или отсутствует. Пропуск генерации иконок.");
-  }
-
-  return src(targetPath, { 
-    allowEmpty: true, 
-    encoding: false // ИСПРАВЛЕНО: Запрещаем Gulp читать картинку как текст!
-  })
+  return src(targetPath, { allowEmpty: true, encoding: false })
     .pipe(plumber({ errorHandler: onError }))
     .pipe(
       gulpIf(
@@ -148,9 +150,15 @@ export function favs() {
           path: "images/favicons/",
           html: "favicon-links.html",
           pipeHTML: true,
-          icons: { appleIcon: true, favicons: true, android: true, windows: false, yandex: false },
-        })
-      )
+          icons: {
+            appleIcon: true,
+            favicons: true,
+            android: true,
+            windows: false,
+            yandex: false,
+          },
+        }),
+      ),
     )
     .pipe(dest(path.join(config.buildFolder, "images", "favicons")))
     .pipe(filter("favicon-links.html"))
@@ -169,7 +177,6 @@ export function cleanimg(done) {
         });
       }
     });
-    console.log("🧹 Графика очищена, папка favicons сохранена.");
   }
   done();
 }

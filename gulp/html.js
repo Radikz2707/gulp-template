@@ -3,12 +3,50 @@ import gulp from "gulp";
 import plumber from "gulp-plumber";
 import fileInclude from "gulp-file-include";
 import htmlhint from "gulp-htmlhint";
-import imgToPicture from "gulp-html-img-to-picture"; // Импортируем правильный плагин
 import htmlBeautify from "gulp-html-beautify";
+import { Transform } from "stream";
 
 import { onError, isProd, bs } from "./server.js";
 
 const { src, dest } = gulp;
+
+// Генератор тега <picture> строго с WebP
+const fixPictureTags = () => {
+  return new Transform({
+    objectMode: true,
+    transform(file, encoding, callback) {
+      if (file.isBuffer()) {
+        let html = file.contents.toString();
+
+        html = html.replace(
+          /<img\s+([^>]*?)src=["']([^"']+\.(?:png|jpg|jpeg))["']([^>]*?)>/gi,
+          (match, before, srcPath, after) => {
+            const allAttributes = `${before} ${after}`;
+            if (
+              allAttributes.includes("data-ignore") ||
+              allAttributes.includes("img-ignore")
+            ) {
+              return match;
+            }
+
+            const webpPath = srcPath.replace(/\.(?:png|jpg|jpeg)$/i, ".webp");
+            const cleanAttributes = `${before.trim()} ${after.trim()}`.trim();
+            const imgAttributes = cleanAttributes ? ` ${cleanAttributes}` : "";
+
+            // Возвращаем чистый WebP-стек с красивыми отступами
+            return `<picture>
+      <source srcset="${webpPath}" type="image/webp">
+      <img src="${srcPath}"${imgAttributes}>
+    </picture>`;
+          },
+        );
+
+        file.contents = Buffer.from(html);
+      }
+      callback(null, file);
+    },
+  });
+};
 
 export function html() {
   const pipeline = [
@@ -21,16 +59,10 @@ export function html() {
     fileInclude({ prefix: "@@", basepath: "@file" }),
   ];
 
-  // В продакшене безопасно оборачиваем картинки в <picture>
   if (isProd) {
-    pipeline.push(
-      imgToPicture({
-        imgFolder: config.buildFolder, // Указываем, куда сборщик смотрит на картинки
-      }),
-    );
+    pipeline.push(fixPictureTags());
   }
 
-  // Сначала форматируем в идеал
   pipeline.push(
     htmlBeautify({
       indent_size: 2,
@@ -43,7 +75,6 @@ export function html() {
     }),
   );
 
-  // Валидируем уже чистый отформатированный код
   pipeline.push(
     htmlhint({
       "doctype-first": false,
