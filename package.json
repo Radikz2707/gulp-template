@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "gulp",
     "build": "gulp build",
-    "init": "gulp createStructure",
+    "init": "gulp init",
     "create": "gulp create",
     "module": "gulp module",
     "remove": "gulp remove",
