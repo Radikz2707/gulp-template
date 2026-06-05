@@ -6,7 +6,6 @@ import plumber from "gulp-plumber";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const sourcemaps = require("gulp-sourcemaps");
-const gcmq = require("gulp-group-css-media-queries");
 const cleancss = require("gulp-clean-css");
 const rename = require("gulp-rename");
 const purgecss = require("gulp-purgecss");
@@ -17,6 +16,7 @@ import postcss from "gulp-postcss";
 import autoprefixer from "autoprefixer";
 
 import webpInCssModule from "webp-in-css/plugin.js";
+import sortMediaQueries from "postcss-sort-media-queries";
 const webpInCss = webpInCssModule.default || webpInCssModule;
 
 import { onError, isProd, bs } from "./server.js";
@@ -39,8 +39,8 @@ export function styles() {
   pipeline.push(
     // ИСПРАВЛЕНО: убран .on('error'), так как за ошибки отвечает plumber
     sass({ silenceDeprecations: ["import"] }),
-    gcmq(),
     postcss([
+      sortMediaQueries({ sort: "mobile-first" }), // Перенесли сортировку медиа-запросов сюда
       webpInCss,
       autoprefixer({
         overrideBrowserslist: config.settings.autoprefixer,

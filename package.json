@@ -13,7 +13,11 @@
     "remove": "gulp remove",
     "lint": "gulp lintJs lintCss",
     "clean": "gulp cleandist",
-    "update-modules": "npx npm-check-updates -i --no-cache && npm install --legacy-peer-deps"
+    "update-modules": "npx npm-check-updates -i --no-cache && npm install --legacy-peer-deps",
+    "prepare": "husky install"
+  },
+  "lint-staged": {
+    "src/**/*.scss": "npx stylelint --fix"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
@@ -36,7 +40,6 @@
     "gulp-filter": "^10.0.0",
     "gulp-flatten": "^0.4.0",
     "gulp-fonter": "^0.3.0",
-    "gulp-group-css-media-queries": "^1.2.2",
     "gulp-html-beautify": "^1.0.1",
     "gulp-html-img-to-picture": "^1.0.3",
     "gulp-htmlhint": "^4.0.2",
@@ -55,10 +58,13 @@
     "gulp-webp": "^5.1.0",
     "gulp-zip": "^6.1.0",
     "htmlhint-stylish": "^1.0.3",
+    "husky": "^8.0.0",
     "imagemin-mozjpeg": "^10.0.0",
     "imagemin-optipng": "^8.0.0",
     "imagemin-svgo": "^12.0.0",
+    "lint-staged": "^17.0.7",
     "postcss": "^8.5.15",
+    "postcss-sort-media-queries": "^6.6.1",
     "sass": "^1.100.0",
     "stylelint": "^17.12.0",
     "stylelint-config-standard-scss": "^17.0.0",
@@ -78,5 +84,8 @@
   ],
   "dependencies": {
     "sharp": "^0.34.5"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }
