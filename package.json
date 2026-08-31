@@ -17,7 +17,7 @@
     "prepare": "husky install",
     "audit": "node run-audit.js",
     "blueprint": "node generate-blueprint.js",
-    "push:main": "git add . && git commit -m \"Updates: $(date +'%Y-%m-%d %H:%M:%S')\" && git push origin main",
+    "push:main": "git add . && git commit -m \"Updates\" && git push origin main",
     "deploy:gh": "npm run build && npx gh-pages -d dist --dotfiles -f"
   },
   "lint-staged": {
