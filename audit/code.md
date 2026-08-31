@@ -1,35 +1,19 @@
 /* cspell:disable */
 import { config } from "./gulp.config.js";
 import gulp from "gulp";
-import { execSync } from "child_process";
 
 // Импорты инфраструктуры (Оставляем строго легкие утилиты контроля среды)
 import { isProd } from "./gulp/server.js";
 import { lintCss, lintJs } from "./gulp/lint.js";
 import { cleandist, zipFiles, buildcopy } from "./gulp/utils.js";
+import { getBuildSignature } from "./gulp/system/gulp.cache.js";
 
-// Инструменты автоматизации CLI (🎯 Восстановлен чистый прямой импорт из корня)
-import { create } from "./gulp.create.js";
-import { createModule as module } from "./gulp.module.js";
-import { remove } from "./gulp.remove.js";
-import { createStructure as init } from "./gulp.init.js";
-import { help } from "./gulp.help.js";
-
-// 🎯 АВТОНОМНАЯ ГЕНЕРАЦИЯ СИГНАТУРЫ СБОРКИ (CACHE BUSTING)
-let currentSig = "";
-function getBuildSignature() {
-  if (currentSig) return currentSig;
-  if (process.env.NODE_ENV === "production" || isProd) {
-    try {
-      currentSig = execSync("git rev-parse --short HEAD").toString().trim();
-      return currentSig;
-    } catch {
-      // Фолбэк на случай, если Git в старом шаблоне не инициализирован
-    }
-  }
-  currentSig = String(Date.now());
-  return currentSig;
-}
+// Инструменты автоматизации CLI (Перенаправлены в изолированную папку gulp/system/)
+import { create } from "./gulp/system/gulp.create.js";
+import { createModule as module } from "./gulp/system/gulp.module.js";
+import { remove } from "./gulp/system/gulp.remove.js";
+import { createStructure as init } from "./gulp/system/gulp.init.js";
+import { help } from "./gulp/system/gulp.help.js";
 
 const version = getBuildSignature();
 console.log(
